@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract CrownToken is Ownable, ERC20 {
 
-     constructor() public ERC20("Crown Capital DAO", "CROWN") {
+     constructor() public ERC20("Crown Capital Token", "CROWN") {
         _mint(msg.sender, 1000 * 10 ** 18);
     }
 }

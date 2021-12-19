@@ -581,7 +581,7 @@ function App(props) {
         <Switch>
           <Route exact path="/">
             <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Your Tokens" extra={<a href="#">code</a>}>
+              <Card title="Crown Tokens Owned" extra={<a href="#">code</a>}>
                 <div style={{ padding: 8 }}>
                   <Balance balance={CrownTokenBalance} fontSize={64} />
                 </div>
@@ -726,14 +726,6 @@ function App(props) {
           </Route>
           <Route path="/contracts">
             <Contract
-              name="Vendor"
-              signer={userSigner}
-              provider={localProvider}
-              address={address}
-              blockExplorer={blockExplorer}
-              contractConfig={contractConfig}
-            />
-            <Contract
               name="CrownToken"
               signer={userSigner}
               provider={localProvider}
@@ -741,6 +733,22 @@ function App(props) {
               blockExplorer={blockExplorer}
               contractConfig={contractConfig}
             />
+            <Contract
+              name="Vault"
+              signer={userSigner}
+              provider={localProvider}
+              address={address}
+              blockExplorer={blockExplorer}
+              contractConfig={contractConfig}
+            />
+            <Contract
+              name="Farm"
+              signer={userSigner}
+              provider={localProvider}
+              address={address}
+              blockExplorer={blockExplorer}
+              contractConfig={contractConfig}
+            />            
           </Route>
         </Switch>
       </BrowserRouter>
