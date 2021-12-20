@@ -23,74 +23,73 @@ contract Farm is Ownable {
 
   CrownToken crownToken;
   Vault vault;
-  constructor(address tokenAddress) public {
+  constructor(address tokenAddress, address vaultAddress) public {
     crownToken = CrownToken(tokenAddress);
-    vault = Vault(tokenAddress);
+    vault = Vault(vaultAddress);
   }
 
 
   // Stake tokens to farm contract
-  function stake(uint256 amount) public {
+  function stake(uint256 amountToStake) public {
       require(
-          amount > 0, 
+          amountToStake > 0, 
           "You cannot stake zero tokens.");
       require(
-          crownToken.balanceOf(msg.sender) >= amount, 
+          crownToken.balanceOf(msg.sender) >= amountToStake, 
           "You cannot stake more tokens than you own.");          
 
       if(isStaking[msg.sender]){
         updateYield();
       }
        
-      (bool sent) = crownToken.transferFrom(msg.sender, address(this), amount);
+      (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
       require(sent, "Failed to transfer tokens from user to Farm");
             
       if(stakingBalance[msg.sender] == 0){
           stakers.push(msg.sender);
       }      
       
-      stakingBalance[msg.sender] += amount;
+      stakingBalance[msg.sender] += amountToStake;
       isStaking[msg.sender] = true;
       startTime[msg.sender] = block.timestamp;
       
-      emit Stake(msg.sender, amount);
+      emit Stake(msg.sender, amountToStake);
   }
 
 
   // Unstake tokens from farm contract
-    function unstake(uint256 amount) public {
+  function unstake(uint256 amountToUnstake) public {
+    require(
+      isStaking[msg.sender] = true &&
+      stakingBalance[msg.sender] >= amountToUnstake, 
+      "Nothing to unstake"
+    );
 
-        require(
-            isStaking[msg.sender] = true &&
-            stakingBalance[msg.sender] >= amount, 
-            "Nothing to unstake"
-        );
+    updateYield();
 
-        updateYield();
+    uint256 balTransfer = 0;
+    balTransfer = amountToUnstake;
+    stakingBalance[msg.sender] -= balTransfer;
+    
+    (bool sent) = crownToken.transfer(msg.sender, balTransfer);
+    require(sent, "Failed to withdraw Tokens"); 
 
-        uint256 balTransfer = 0;
-        balTransfer = amount;
-        stakingBalance[msg.sender] -= balTransfer;
-        
-        (bool sent) = crownToken.transfer(msg.sender, balTransfer);
-        require(sent, "Failed to withdraw Tokens"); 
+    if(stakingBalance[msg.sender] == 0){
+      isStaking[msg.sender] = false;
 
-        if(stakingBalance[msg.sender] == 0){
-            isStaking[msg.sender] = false;
-
-            for (
-              uint256 stakersIndex = 0;
-              stakersIndex < stakers.length;
-              stakersIndex++
-              ) {
-                  if(msg.sender == stakers[stakersIndex]){
-                      removeAddress(stakersIndex);
-                  }
-                }
-        }
-
-        emit Unstake(msg.sender, balTransfer);
+      for (
+        uint256 stakersIndex = 0;
+        stakersIndex < stakers.length;
+        stakersIndex++
+        ) {
+            if(msg.sender == stakers[stakersIndex]){
+                removeAddress(stakersIndex);
+            }
+          }
     }
+
+    emit Unstake(msg.sender, balTransfer);
+  }
 
   // Withdraw Yield
   function withdrawYield() public {
@@ -100,13 +99,12 @@ contract Farm is Ownable {
       uint256 toTransfer=0;
       toTransfer = crownYield[msg.sender];
       crownYield[msg.sender] = 0;
+
       require(
         toTransfer > 0 ||
         crownYield[msg.sender] > 0,
         "Nothing to withdraw"
         );
-
-    //vault.sendToFarm();
 
     uint256 farmBalance = crownToken.balanceOf(address(this));
     require(farmBalance >= toTransfer, 
@@ -122,6 +120,7 @@ contract Farm is Ownable {
 
 
   function updateYield() public {    
+    vault.sendToFarm();
     uint256 totalStake = 0;
     totalStake = totalStaked();
 
@@ -139,6 +138,7 @@ contract Farm is Ownable {
           }
   }
 
+
   function totalStaked() public view returns(uint256) {    
     uint256 totalStake = 0;
     for (
@@ -151,6 +151,7 @@ contract Farm is Ownable {
         }
         return totalStake;
   }
+
 
   function calculateYieldTotal(address staker, uint256 totalStake) private view returns(uint256) {
       uint256 secondsPassed = calculateYieldTime(staker) * 10**18;

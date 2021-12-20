@@ -255,24 +255,25 @@ function App(props) {
     "0x34aA3F359A9D614239015126635CE7732c18fDF3",
   ]);
 
-  const vendorAddress = readContracts && readContracts.Vendor && readContracts.Vendor.address;
+  const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
 
-  const vendorETHBalance = useBalance(localProvider, vendorAddress);
-  if (DEBUG) console.log("💵 vendorETHBalance", vendorETHBalance ? ethers.utils.formatEther(vendorETHBalance) : "...");
-
-  const vendorApproval = useContractReader(readContracts, "CrownToken", "allowance", [
-    address, vendorAddress
+  const farmApproval = useContractReader(readContracts, "CrownToken", "allowance", [
+    address, farmAddress
   ]);
-  console.log("🤏 vendorApproval",vendorApproval)
+  console.log("🤏 farmApproval",farmApproval)
 
-  const vendorTokenBalance = useContractReader(readContracts, "CrownToken", "balanceOf", [vendorAddress]);
-  console.log("🏵 vendorTokenBalance:", vendorTokenBalance ? ethers.utils.formatEther(vendorTokenBalance) : "...");
+  const farmTokenBalance = useContractReader(readContracts, "CrownToken", "balanceOf", [farmAddress]);
+  console.log("🏵 farmTokenBalance:", farmTokenBalance ? ethers.utils.formatEther(farmTokenBalance) : "...");
 
   const CrownTokenBalance = useContractReader(readContracts, "CrownToken", "balanceOf", [address]);
   console.log("🏵 CrownTokenBalance:", CrownTokenBalance ? ethers.utils.formatEther(CrownTokenBalance) : "...");
 
-  const tokensPerEth = useContractReader(readContracts, "Vendor", "tokensPerEth");
-  console.log("🏦 tokensPerEth:", tokensPerEth ? tokensPerEth.toString() : "...");
+
+  const UserYield = useContractReader(readContracts, "Farm", "crownYield", [address]);
+  console.log("🏵 UserYield:", UserYield ? ethers.utils.formatEther(UserYield) : "...");
+
+  // const tokensPerEth = useContractReader(readContracts, "Vendor", "tokensPerEth");
+  // console.log("🏦 tokensPerEth:", tokensPerEth ? tokensPerEth.toString() : "...");
 
   // const complete = useContractReader(readContracts,"ExampleExternalContract", "completed")
   // console.log("✅ complete:",complete)
@@ -483,20 +484,23 @@ function App(props) {
     );
   }
 
-  const buyTokensEvents = useEventListener(readContracts, "Vendor", "BuyTokens", localProvider, 1);
-  console.log("📟 buyTokensEvents:", buyTokensEvents);
+  const stakeTokenEvents = useEventListener(readContracts, "Farm", "Stake", localProvider, 1);
+  console.log("📟 stakeTokensEvents:", stakeTokenEvents);
+  const unstakeTokenEvents = useEventListener(readContracts, "Farm", "Unstake", localProvider, 1);
+  console.log("📟 unstakeTokensEvents:", unstakeTokenEvents);  
 
   const [tokenBuyAmount, setTokenBuyAmount] = useState();
-  const [tokenSellAmount, setTokenSellAmount] = useState();
-  const [isSellAmountApproved, setIsSellAmountApproved] = useState();
+  const [amountToStake, setAmountToStake] = useState();
+  const [amountToUnstake, setAmountToUnstake] = useState();
+  const [isStakeAmountApproved, setIsStakeAmountApproved] = useState();
 
   useEffect(()=>{
-    console.log("tokenSellAmount",tokenSellAmount)
-    const tokenSellAmountBN = tokenSellAmount && ethers.utils.parseEther("" + tokenSellAmount)
-    console.log("tokenSellAmountBN",tokenSellAmountBN)
-    setIsSellAmountApproved(vendorApproval && tokenSellAmount && vendorApproval.gte(tokenSellAmountBN))
-  },[tokenSellAmount, readContracts])
-  console.log("isSellAmountApproved",isSellAmountApproved)
+    console.log("amountToStake",amountToStake)
+    const amountToStakeBN = amountToStake && ethers.utils.parseEther("" + amountToStake)
+    console.log("amountToStakeBN",amountToStakeBN)
+    setIsStakeAmountApproved(farmApproval && amountToStake && farmApproval.gte(amountToStakeBN))
+  },[amountToStake, readContracts])
+  console.log("isStakeAmountApproved",isStakeAmountApproved)
 
   const ethCostToPurchaseTokens =
     tokenBuyAmount && tokensPerEth && ethers.utils.parseEther("" + tokenBuyAmount / parseFloat(tokensPerEth));
@@ -506,12 +510,14 @@ function App(props) {
   const [tokenSendAmount, setTokenSendAmount] = useState();
 
   const [buying, setBuying] = useState();
+  const [claiming, setClaiming] = useState();
+  // const [buying, setBuying] = useState();
 
   let transferDisplay = "";
   if (CrownTokenBalance) {
     transferDisplay = (
       <div style={{ padding: 8, marginTop: 32, width: 420, margin: "auto" }}>
-        <Card title="Transfer tokens">
+        <Card title="Transfer Tokens">
           <div>
             <div style={{ padding: 8 }}>
               <AddressInput
@@ -563,7 +569,7 @@ function App(props) {
               }}
               to="/"
             >
-              CrownToken
+              Crown Farm
             </Link>
           </Menu.Item>
           <Menu.Item key="/contracts">
@@ -587,22 +593,78 @@ function App(props) {
                 </div>
               </Card>
             </div>
+            
+
+            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
+
+            <div style={{ padding: 0, marginTop: 32, width: 300, margin: "auto" }}>
+              <Card title="Yield Generated" extra={<a href="#">code</a>}>
+                <div style={{ padding: 8 }}>
+                  <Balance balance={UserYield} fontSize={64} />
+                </div>
+
+                <div style={{ padding: 8}}>
+                  <Button
+                    type={"primary"}
+                    loading={claiming}
+                    onClick={async () => {
+                      setClaiming(true);
+                      await tx(writeContracts.Farm.updateYield());
+                      setClaiming(false);
+                    }}
+                  >
+                    Update
+                  </Button>
+
+                  <Button
+                    type={"primary"}
+                    loading={claiming}
+                    onClick={async () => {
+                      setClaiming(true);
+                      await tx(writeContracts.Farm.withdrawYield());
+                      setClaiming(false);
+                    }}
+                  >
+                    Claim
+                  </Button>
+                </div>
+
+
+              </Card>
+            </div>
             {transferDisplay}
+            <div style={{ padding: 0, marginTop: 32, width: 300, margin: "auto" }}></div>
+
+
+            </div>            
             <Divider />
             <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Buy Tokens" extra={<a href="#">code</a>}>
-                <div style={{ padding: 8 }}>{tokensPerEth && tokensPerEth.toNumber()} tokens per ETH</div>
+              <Card title="Stake Tokens">
 
                 <div style={{ padding: 8 }}>
                   <Input
                     style={{ textAlign: "center" }}
-                    placeholder={"amount of tokens to buy"}
-                    value={tokenBuyAmount}
+                    placeholder={"number of tokens to stake"}
+                    value={amountToStake}
                     onChange={e => {
-                      setTokenBuyAmount(e.target.value);
+                      setAmountToStake(e.target.value);
                     }}
                   />
-                  <Balance balance={ethCostToPurchaseTokens} dollarMultiplier={price} />
+                  {/* <Balance balance={ethCostToPurchaseTokens} dollarMultiplier={price} /> */}
+                </div>
+       
+                <div style={{ padding: 8 }}>
+                  <Button
+                    type={"primary"}
+                    loading={buying}
+                    onClick={async () => {
+                      setBuying(true);
+                      await tx(writeContracts.CrownToken.approve(readContracts.Farm.address, amountToStake && ethers.utils.parseEther(amountToStake)));
+                      setBuying(false);
+                    }}
+                  >
+                    Approve Tokens
+                  </Button>
                 </div>
 
                 <div style={{ padding: 8 }}>
@@ -611,94 +673,86 @@ function App(props) {
                     loading={buying}
                     onClick={async () => {
                       setBuying(true);
-                      await tx(writeContracts.Vendor.buyTokens({ value: ethCostToPurchaseTokens }));
+                      await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
                       setBuying(false);
                     }}
                   >
-                    Buy Tokens
+                    Stake Tokens
                   </Button>
                 </div>
+                  
+
+                
               </Card>
             </div>
-          
-            { /*Extra UI for buying the tokens back from the user using "approve" and "sellTokens"*/}
-            
-            
-            <Divider />
+
+
+
             <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Sell Tokens">
-                <div style={{ padding: 8 }}>{tokensPerEth && tokensPerEth.toNumber()} tokens per ETH</div>
+              <Card title="Unstake Tokens" extra={<a href="#">code</a>}>                
 
                 <div style={{ padding: 8 }}>
                   <Input
                     style={{ textAlign: "center" }}
-                    placeholder={"amount of tokens to sell"}
-                    value={tokenSellAmount}
+                    placeholder={"amount of tokens to unstake"}
+                    value={amountToUnstake}
                     onChange={e => {
-                      setTokenSellAmount(e.target.value);
+                      setAmountToUnstake(e.target.value);
                     }}
                   />
-                  <Balance balance={ethCostToPurchaseTokens} dollarMultiplier={price} />
+
                 </div>
-                {isSellAmountApproved?
-
-                  <div style={{ padding: 8 }}>
-                    <Button
-                      type={"primary"}
-                      loading={buying}
-                      onClick={async () => {
-                        setBuying(true);
-                        await tx(writeContracts.Vendor.sellTokens(tokenSellAmount && ethers.utils.parseEther(tokenSellAmount)));
-                        setBuying(false);
-                      }}
-                    >
-                      Sell Tokens
-                    </Button>
-                  </div>
-                  :
-                  <div style={{ padding: 8 }}>
-                    <Button
-                      type={"primary"}
-                      loading={buying}
-                      onClick={async () => {
-                        setBuying(true);
-                        await tx(writeContracts.CrownToken.approve(readContracts.Vendor.address, tokenSellAmount && ethers.utils.parseEther(tokenSellAmount)));
-                        setBuying(false);
-                      }}
-                    >
-                      Approve Tokens
-                    </Button>
-                  </div>
-                }
-
-
+                <div style={{ padding: 8 }}>
+                  <Button
+                    type={"primary"}
+                    loading={buying}
+                    onClick={async () => {
+                      setBuying(true);
+                      await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
+                      setBuying(false);
+                    }}
+                  >
+                    Stop Staking
+                  </Button>
+                </div>
               </Card>
-            </div>
+            </div>            
             
-            
-            
+
+            <Divider />
+            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
+              <Card title="Check Yield" extra={<a href="#">code</a>}>                
+                <div style={{ padding: 8 }}>
+                  <Button
+                    type={"primary"}
+                    loading={claiming}
+                    onClick={async () => {
+                      setClaiming(true);
+                      await tx(writeContracts.Farm.updateYield());
+                      setClaiming(false);
+                    }}
+                  >
+                    Claim
+                  </Button>
+                </div>
+              </Card>
+            </div>   
+
 
             <div style={{ padding: 8, marginTop: 32 }}>
-              <div>Vendor Token Balance:</div>
-              <Balance balance={vendorTokenBalance} fontSize={64} />
-            </div>
-
-            <div style={{ padding: 8 }}>
-              <div>Vendor ETH Balance:</div>
-              <Balance balance={vendorETHBalance} fontSize={64} /> ETH
+              <div>Farm Token Balance:</div>
+              <Balance balance={farmTokenBalance} fontSize={64} />
             </div>
 
             <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
-              <div>Buy Token Events:</div>
+              <div>Stake Token Events:</div>
               <List
-                dataSource={buyTokensEvents}
+                dataSource={stakeTokenEvents}
                 renderItem={item => {
                   return (
                     <List.Item key={item.blockNumber + item.blockHash}>
-                      <Address value={item.args[0]} ensProvider={mainnetProvider} fontSize={16} /> paid
+                      <Address value={item.args[0]} ensProvider={mainnetProvider} fontSize={16} /> staked
                       <Balance balance={item.args[1]} />
-                      ETH to get
-                      <Balance balance={item.args[2]} />
                       Tokens
                     </List.Item>
                   );
@@ -706,23 +760,22 @@ function App(props) {
               />
             </div>
 
-            {/*
+            <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
+              <div>Unstake Token Events:</div>
+              <List
+                dataSource={unstakeTokenEvents}
+                renderItem={item => {
+                  return (
+                    <List.Item key={item.blockNumber + item.blockHash}>
+                      <Address value={item.args[0]} ensProvider={mainnetProvider} fontSize={16} /> unstaked
+                      <Balance balance={item.args[1]} />
+                      Tokens
+                    </List.Item>
+                  );
+                }}
+              />
+            </div>
 
-
-
-                🎛 this scaffolding is full of commonly used components
-                this <Contract/> component will automatically parse your ABI
-                and give you a form to interact with it locally
-
-            <Contract
-              name="YourContract"
-              signer={userSigner}
-              provider={localProvider}
-              address={address}
-              blockExplorer={blockExplorer}
-              contractConfig={contractConfig}
-            />
-            */}
           </Route>
           <Route path="/contracts">
             <Contract
@@ -772,17 +825,7 @@ function App(props) {
       </div>
 
       <div style={{ marginTop: 32, opacity: 0.5 }}>
-        Created by <Address value={"Your...address"} ensProvider={mainnetProvider} fontSize={16} />
-      </div>
-
-      <div style={{ marginTop: 32, paddingBottom: 128, opacity: 0.5 }}>
-        <a
-          target="_blank"
-          style={{ padding: 32, color: "#000" }}
-          href="https://github.com/austintgriffith/scaffold-eth"
-        >
-          🍴 Fork me!
-        </a>
+        Created by <Address value={"sters.eth"} ensProvider={mainnetProvider} fontSize={16} />
       </div>
 
       {/* 🗺 Extra UI like gas price, eth price, faucet, and support: */}

@@ -64,13 +64,4 @@ contract Vault is Ownable {
       startTime=end;
   }     
 
-
-  function sendTokens(uint256 amountToSend) public  {
-
-    uint256 vaultBalance = crownToken.balanceOf(address(this));
-    require(vaultBalance >= amountToSend, "Insuffcient funds in Vendor Contract");
-
-    (bool sent) = crownToken.transfer(msg.sender, amountToSend);
-    require(sent, "Failed to send Tokens");     
-  }
 }
