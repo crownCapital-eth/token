@@ -716,27 +716,7 @@ function App(props) {
                   </Button>
                 </div>
               </Card>
-            </div>            
-            
-
-            <Divider />
-            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Check Yield" extra={<a href="#">code</a>}>                
-                <div style={{ padding: 8 }}>
-                  <Button
-                    type={"primary"}
-                    loading={claiming}
-                    onClick={async () => {
-                      setClaiming(true);
-                      await tx(writeContracts.Farm.updateYield());
-                      setClaiming(false);
-                    }}
-                  >
-                    Claim
-                  </Button>
-                </div>
-              </Card>
-            </div>   
+            </div>             
 
 
             <div style={{ padding: 8, marginTop: 32 }}>
