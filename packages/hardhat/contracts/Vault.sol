@@ -8,19 +8,18 @@ contract Vault is Ownable {
 
   string public name = "Crown Capital Vault";
   address public farmAddress = msg.sender;
+  uint256 public startTime; // Unrealized time
+  uint256 public emissions=0; // Tokens available for transfer
+  uint256 public secondsPerToken=10; // Set the contract payout rate [s]
+  uint256 public secondsPassed=0;
 
-  uint256 public startTime; //Unrealized time
-  uint256 public emissions; //Tokens available for transfer
-  uint256 public rate; // Set the contract payout rate [s]
-
-  event YieldWithdraw(address farmAddress, uint256 amount);
+  event EmissionsSent(address farmAddress, uint256 amount);
+  event UpdateEmissions(uint256 emiss);
 
   CrownToken crownToken;
   constructor(address tokenAddress) public {
     crownToken = CrownToken(tokenAddress);
     startTime=block.timestamp;
-    rate=10;
-    emissions=0;
   }
 
   
@@ -41,7 +40,6 @@ contract Vault is Ownable {
         toTransfer > 0 ,
         "Nothing to withdraw"
         );
-        
 
     uint256 vaultBalance = crownToken.balanceOf(address(this));
     require(vaultBalance >= toTransfer, 
@@ -52,16 +50,25 @@ contract Vault is Ownable {
     (bool sent) = crownToken.transfer(farmAddress, toTransfer);
     require(sent, "Failed to withdraw Tokens"); 
     
-    emit YieldWithdraw(farmAddress, toTransfer);
+    emit EmissionsSent(farmAddress, toTransfer);
   } 
 
 
+  //TODO: Set emissions to max what is in the contract.
   function calculateEmissions() public {
+      uint256 t0=0;
+      t0=startTime;
       uint256 end = block.timestamp;
-      uint256 secondsPassed = (end - startTime) * 10**18;
-      uint256 secondsPerToken = rate;
-      emissions += secondsPassed / secondsPerToken;
-      startTime=end;
+      startTime=end;      
+      secondsPassed = (end - t0) * 10**18;   
+      emissions += (secondsPassed / secondsPerToken);      
+      emit UpdateEmissions(emissions);
   }     
+
+  function getEmissions() public view returns (uint256) {
+      return emissions;
+  }
+
+
 
 }
