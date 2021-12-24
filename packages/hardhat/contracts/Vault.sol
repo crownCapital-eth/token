@@ -10,8 +10,9 @@ contract Vault is Ownable {
   address public farmAddress = msg.sender;
   uint256 public startTime; // Unrealized time
   uint256 public emissions=0; // Tokens available for transfer
-  uint256 public secondsPerToken=10; // Set the contract payout rate [s]
   uint256 public secondsPassed=0;
+  uint256 public secondsPerToken=475646879756468800; // Set the contract payout rate [s]
+  //Actual rate: 75M/(5*365*24*3600) = 0.4756468797564688 Tokens per second
 
   event EmissionsSent(address farmAddress, uint256 amount);
   event UpdateEmissions(uint256 emiss);
@@ -25,6 +26,7 @@ contract Vault is Ownable {
   
   // Assign the address that the vault pays out to
   function assignFarm(address newFarmAddress) public onlyOwner {
+      //sendToFarm();
       farmAddress = newFarmAddress;
       //console.log(msg.sender,"set farm address to", farmAddress);
   }
@@ -54,21 +56,20 @@ contract Vault is Ownable {
   } 
 
 
-  //TODO: Set emissions to max what is in the contract.
   function calculateEmissions() public {
       uint256 t0=0;
       t0=startTime;
       uint256 end = block.timestamp;
       startTime=end;      
       secondsPassed = (end - t0) * 10**18;   
-      emissions += (secondsPassed / secondsPerToken);      
+      emissions += (secondsPassed * 10**18)/ secondsPerToken ;
+      
+      uint256 available = crownToken.balanceOf(address(this));
+
+      if(emissions >  available){
+        emissions=available;
+      }
       emit UpdateEmissions(emissions);
   }     
-
-  function getEmissions() public view returns (uint256) {
-      return emissions;
-  }
-
-
 
 }
