@@ -5,20 +5,6 @@ import { useContractLoader, useOnBlock } from "eth-hooks";
 import { NETWORKS } from "../constants";
 import { Transactor } from "../helpers";
 
-/*
-This is a component for bridging between L1 & L2
-Currently it supports Testnet deposits for Arbitrum & Optimism
-
- __          _______ _____
- \ \        / /_   _|  __ \
-  \ \  /\  / /  | | | |__) |
-   \ \/  \/ /   | | |  ___/
-    \  /\  /   _| |_| |
-     \/  \/   |_____|_|
-
-
-*/
-
 export default function L2ArbitrumBridge({ address, userSigner }) {
   const [L1EthBalance, setL1EthBalance] = useState("...");
   const [L2EthBalance, setL2EthBalance] = useState("...");
