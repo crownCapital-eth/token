@@ -24,5 +24,5 @@ gulp.task("less", function () {
         debug: true,
       }),
     )
-    .pipe(gulp.dest("./public"));
+    .pipe(gulp.dest("."));
 });

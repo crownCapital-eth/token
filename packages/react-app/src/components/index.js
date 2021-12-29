@@ -10,7 +10,6 @@ export { default as GasGauge } from "./GasGauge";
 export { default as Header } from "./Header";
 export { default as Provider } from "./Provider";
 export { default as Ramp } from "./Ramp";
-export { default as ThemeSwitch } from "./ThemeSwitch";
 export { default as TokenBalance } from "./TokenBalance";
 export { default as Wallet } from "./Wallet";
 export { default as L2Bridge } from "./L2Bridge";
