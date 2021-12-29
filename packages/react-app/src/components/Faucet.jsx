@@ -2,9 +2,7 @@ import { SendOutlined } from "@ant-design/icons";
 import { Button, Input, Tooltip } from "antd";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
 import React, { useCallback, useEffect, useState } from "react";
-import Blockies from "react-blockies";
 import { Transactor } from "../helpers";
-import Wallet from "./Wallet";
 
 const { utils } = require("ethers");
 
@@ -22,12 +20,7 @@ export default function Faucet(props) {
     getFaucetAddress();
   }, [props.localProvider]);
 
-  let blockie;
-  if (address && typeof address.toLowerCase === "function") {
-    blockie = <Blockies seed={address.toLowerCase()} size={8} scale={4} />;
-  } else {
-    blockie = <div />;
-  }
+  let blockie = <div />;
 
   const ens = useLookupAddress(props.ensProvider, address);
 
@@ -76,13 +69,6 @@ export default function Faucet(props) {
               }}
               shape="circle"
               icon={<SendOutlined />}
-            />
-            <Wallet
-              color="#888888"
-              provider={props.localProvider}
-              ensProvider={props.ensProvider}
-              price={props.price}
-              address={faucetAddress}
             />
           </Tooltip>
         }
