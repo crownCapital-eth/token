@@ -1,5 +1,5 @@
 {
-  "name": "@scaffold-eth/react-app",
+  "name": "@crown-capital-web3/react-app",
   "version": "1.0.0",
   "homepage": ".",
   "browserslist": {
@@ -77,9 +77,7 @@
     "gulp-postcss": "^9.0.0",
     "ipfs-http-client": "^45.0.0",
     "less-plugin-npm-import": "^2.1.0",
-    "prettier": "^2.0.5",
-    "s3-folder-upload": "^2.3.1",
-    "surge": "^0.21.5"
+    "prettier": "^2.0.5"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -91,10 +89,6 @@
     "start": "react-scripts start",
     "test": "react-scripts test",
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./src/**/*",
-    "ipfs": "node ./scripts/ipfs.js",
-    "surge": "cp build/index.html build/200.html && surge ./build",
-    "s3": "node ./scripts/s3.js",
-    "ship": "yarn surge",
     "theme": "npx gulp less",
     "watch": "node ./scripts/watch.js",
     "prettier": "npx prettier --write . '!(node_module|build)/**/*'"
