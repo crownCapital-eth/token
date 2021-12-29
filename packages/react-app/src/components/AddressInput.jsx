@@ -3,7 +3,6 @@ import { Badge, Input } from "antd";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
 import React, { useCallback, useState } from "react";
 import QrReader from "react-qr-reader";
-import Blockie from "./Blockie";
 import { ethers } from "ethers";
 
 const isENS = (address = "") => address.endsWith(".eth") || address.endsWith(".xyz");
@@ -84,7 +83,6 @@ export default function AddressInput(props) {
         autoComplete="off"
         autoFocus={props.autoFocus}
         placeholder={props.placeholder ? props.placeholder : "address"}
-        prefix={<Blockie address={currentValue} size={8} scale={3} />}
         value={ethers.utils.isAddress(currentValue) && !isENS(currentValue) && isENS(ens) ? ens : currentValue}
         addonAfter={
           <div

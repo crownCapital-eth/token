@@ -1,20 +1,10 @@
 import { Button } from "antd";
 import React from "react";
-import Address from "./Address";
-import Balance from "./Balance";
-import Wallet from "./Wallet";
 
 export default function Account({
-  address,
-  userSigner,
-  localProvider,
-  mainnetProvider,
-  price,
-  minimized,
   web3Modal,
   loadWeb3Modal,
   logoutOfWeb3Modal,
-  blockExplorer,
 }) {
   const modalButtons = [];
   if (web3Modal) {
@@ -27,7 +17,7 @@ export default function Account({
           size="large"
           onClick={logoutOfWeb3Modal}
         >
-          logout
+          Disconnect
         </Button>,
       );
     } else {
@@ -46,30 +36,8 @@ export default function Account({
     }
   }
 
-  const display = minimized ? (
-    ""
-  ) : (
-    <span>
-      {address ? (
-        <Address address={address} ensProvider={mainnetProvider} blockExplorer={blockExplorer} />
-      ) : (
-        "Connecting..."
-      )}
-      <Balance address={address} provider={localProvider} price={price} />
-      <Wallet
-        address={address}
-        provider={localProvider}
-        signer={userSigner}
-        ensProvider={mainnetProvider}
-        price={price}
-        color={"#2caad9"}
-      />
-    </span>
-  );
-
   return (
     <div>
-      {display}
       {modalButtons}
     </div>
   );
