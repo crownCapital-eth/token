@@ -1,7 +1,6 @@
 import { Skeleton, Typography } from "antd";
 import React from "react";
 import Blockies from "react-blockies";
-import { useThemeSwitcher } from "react-css-theme-switcher";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
 
 const { Text } = Typography;
@@ -13,8 +12,6 @@ export default function Address(props) {
   const address = props.value || props.address;
 
   const ens = useLookupAddress(props.ensProvider, address);
-
-  const { currentTheme } = useThemeSwitcher();
 
   if (!address) {
     return (
@@ -39,7 +36,7 @@ export default function Address(props) {
     return (
       <span style={{ verticalAlign: "middle" }}>
         <a
-          style={{ color: currentTheme === "light" ? "#222222" : "#ddd" }}
+          style={{ color: "#ddd" }}
           target="_blank"
           href={etherscanLink}
           rel="noopener noreferrer"
@@ -55,7 +52,7 @@ export default function Address(props) {
     text = (
       <Text editable={{ onChange: props.onChange }} copyable={{ text: address }}>
         <a
-          style={{ color: currentTheme === "light" ? "#222222" : "#ddd" }}
+          style={{ color: "#ddd" }}
           target="_blank"
           href={etherscanLink}
           rel="noopener noreferrer"
@@ -68,7 +65,7 @@ export default function Address(props) {
     text = (
       <Text copyable={{ text: address }}>
         <a
-          style={{ color: currentTheme === "light" ? "#222222" : "#ddd" }}
+          style={{ color: "#ddd" }}
           target="_blank"
           href={etherscanLink}
           rel="noopener noreferrer"

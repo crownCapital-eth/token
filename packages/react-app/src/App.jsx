@@ -18,21 +18,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import WalletLink from "walletlink";
 import Web3Modal from "web3modal";
-import "./App.css";
-import {
-  Account,
-  Address,
-  AddressInput,
-  Balance,
-  Contract,
-  Faucet,
-  GasGauge,
-  Header,
-  Ramp,
-  ThemeSwitch,
-} from "./components";
+import "./App.less";
+import { Account, Address, AddressInput, Balance, Contract, Faucet, GasGauge, Header, Ramp } from "./components";
 import { INFURA_ID, NETWORK, NETWORKS } from "./constants";
 import { Transactor } from "./helpers";
+import Background from "./cc-waves-bg-mobile.jpeg";
 
 // contracts
 import externalContracts from "./contracts/external_contracts";
@@ -76,7 +66,7 @@ const walletLinkProvider = walletLink.makeWeb3Provider(`https://mainnet.infura.i
 const web3Modal = new Web3Modal({
   network: "mainnet", // Optional. If using WalletConnect on xDai, change network to "xdai" and add RPC info below for xDai chain.
   cacheProvider: true, // optional
-  theme: "light", // optional. Change to "dark" for a dark theme.
+  theme: "dark",
   providerOptions: {
     walletconnect: {
       package: WalletConnectProvider, // required
@@ -445,7 +435,7 @@ function App(props) {
   }
 
   return (
-    <div className="App">
+    <div className="App" style={{ backgroundImage: "url(" + Background + ")" }}>
       <Header />
       {networkDisplay}
       <BrowserRouter>
@@ -664,8 +654,6 @@ function App(props) {
           </Route>
         </Switch>
       </BrowserRouter>
-
-      <ThemeSwitch />
 
       {/* 👨‍💼 Your account is in the top right with a wallet at connect options */}
       <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>

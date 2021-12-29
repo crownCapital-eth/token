@@ -1,5 +1,5 @@
 {
-  "name": "@crown-capital-web3/hardhat",
+  "name": "@crown-capital-staking/hardhat",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
