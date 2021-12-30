@@ -43,7 +43,8 @@ describe("Vault", () => {
     
     // Set the Farm Address
     console.log("\n Set Farm address to Farm Contract\n");
-    const setFarmAddress = await vaultContract.assignFarm(farmContract.address); 
+    await vaultContract.initializeFarm(farmContract.address, 100); 
+    await vaultContract.setFarms();
 
     // Transfer Ownership
     await vaultContract.transferOwnership(owner.address);
@@ -53,7 +54,6 @@ describe("Vault", () => {
     vaultTokensSupply = await tokenContract.balanceOf(vaultContract.address);
     farmTokensSupply = await tokenContract.balanceOf(farmContract.address);    
     ownerTokenSupply  = await tokenContract.balanceOf(owner.address);
-    //tokensPerEth = await vendorContract.tokensPerEth();
   });
 
 
@@ -73,7 +73,7 @@ describe("Vault", () => {
       
       const t0_emissions=await vaultContract.emissions();
 
-      const blockTime = 4     
+      const blockTime = 3     
       await ethers.provider.send("evm_increaseTime", [blockTime]);
       const totalTime = 2*blockTime;
 
@@ -100,7 +100,7 @@ describe("Vault", () => {
       // t0=1s, blocktime=5s
       // Total time increase = t0 + increaseTime + 1*blocktime = 10s
       const expecteedEmissions = "4.756468797564687975"   
-      const increaseTime = 4; //[s]
+      const increaseTime = 3; //[s]
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       await vaultContract.connect(addr1).calculateEmissions();
       const emissions1 = await vaultContract.emissions();
@@ -110,22 +110,33 @@ describe("Vault", () => {
 
   describe('Test assignFarm() method', () => {
     it('Check Farm Address', async () => {    
-      const vaultFarmAddress = await vaultContract.farmAddress();          
+      const vaultFarmAddress = await vaultContract.activeFarmTokens(0);          
       const farmAddress = await farmContract.address;
       expect(vaultFarmAddress).to.equal(farmAddress);      
     });
 
-    it('assignFarm reverted because called by not the owner', async () => {
+    it('initializeFarm reverted because called by not the owner', async () => {
       await expect(
-        vaultContract.connect(addr1).assignFarm(addr1.address))
+        vaultContract.connect(addr1).initializeFarm(addr1.address, 100))
         .to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('assignFarm success', async () => {
-      await vaultContract.connect(owner).assignFarm(owner.address);
-      const newFarmAddress = await vaultContract.farmAddress();
-      expect(newFarmAddress).to.equal(owner.address);
-    });       
+    it('resetInitialization reverted because called by not the owner', async () => {
+      await expect(
+        vaultContract.connect(addr1).resetInitialization())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('setFarms reverted because called by not the owner', async () => {
+      await expect(
+        vaultContract.connect(addr1).setFarms())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });    
+    // it('assignFarm success', async () => {
+    //   await vaultContract.connect(owner).assignFarm(owner.address);
+    //   const newFarmAddress = await vaultContract.ifarmAddress();
+    //   expect(newFarmAddress).to.equal(owner.address);
+    // });       
 
   });
 
@@ -134,7 +145,7 @@ describe("Vault", () => {
       // t0=1s, blocktime=5s
       // Total time increase = t0 + increaseTime + 1*blocktime = 10s
       const expectedEmissions = "4.756468797564687975"      
-      const increaseTime = 4;
+      const increaseTime = 3;
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       
       await vaultContract.sendToFarm();                

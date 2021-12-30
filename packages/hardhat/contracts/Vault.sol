@@ -7,14 +7,21 @@ import "./CrownToken.sol";
 contract Vault is Ownable {
 
   string public name = "Crown Capital Vault";
-  address public farmAddress = msg.sender;
+
+  address[] public farmTokens;
+  uint256[] public farmPercents;
+  address[] public activeFarmTokens;
+  //mapping(address => bool) public  isFarm;
+  mapping(address => uint256) public perFarmEmissions; // token contract to yield % of emissions from vault
+  mapping(address => uint256) public farms;
+
+  //address public ifarmAddress = msg.sender;
   uint256 public lastEmissionsTime; // Unrealized time
   uint256 public emissions; // Tokens available for transfer
-  //uint256 public secondsPassed=0;
   
   uint256 public tokensPerSecond= 475646879756468797; // Set the contract payout rate [s]
   uint256 public secondsPerToken=2102400000000000000; // Set the contract payout rate [s]
-  //Actual rate: 75M/(5*365*24*3600) = 0.4756468797564688 Tokens per second
+  
   uint256 public vaultStartTime;
   uint256 public secondsIn5Years=157680000;
 
@@ -27,55 +34,115 @@ contract Vault is Ownable {
     vaultStartTime=block.timestamp;
     lastEmissionsTime=block.timestamp;
     emissions=0;
+    //initializeFarm(tokenAddress, 100);
+    //setFarms();
   }
-
   
-  // Assign the address that the vault pays out to
-  function assignFarm(address newFarmAddress) public onlyOwner {
-      //sendToFarm();
-      farmAddress = newFarmAddress;
+  function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner{
+    require(
+      percent>=0 && percent<=100,
+      "Percent must be between 0 and 100"
+    );
+    farmTokens.push(tokenAddress);
+    farmPercents.push(percent);    
   }
 
+  function resetInitialization() public onlyOwner {
+    delete farmTokens;
+    delete farmPercents;
+  }
 
-  function sendToFarm() public {
-    uint256 toTransfer = 0;
-    calculateEmissions();
-    toTransfer = emissions;
-    emissions=0;
+  function killFarms() public onlyOwner {
+    delete activeFarmTokens;
+  }
 
+  function setFarms() public onlyOwner{   
     require(
-        toTransfer > 0 ,
-        "Nothing to withdraw"
-        );
+      farmTokens.length == farmPercents.length,
+      "Addresses and percents must be of equal length"
+    );
+
+    // Require percent == 100
+    uint256 totalPercent = 0;
+    for (
+      uint256 idx = 0;
+      idx < farmPercents.length;
+      idx++
+      ) {        
+        totalPercent+=farmPercents[idx];
+        }
+    require(totalPercent==100, "Total Percent must be 100");
+    
+    delete activeFarmTokens;
+    // SET NEW FARMS
+    for (
+      uint256 idx = 0;
+      idx < farmTokens.length;
+      idx++
+      ) {        
+        address addr = farmTokens[idx];
+        farms[addr]=farmPercents[idx];
+        activeFarmTokens.push(addr);
+        }
+    
+    delete farmTokens;
+    delete farmPercents;
+  }
+
+  function sendToFarm() public {    
+    calculateEmissions();
+    require(
+      emissions > 0 ,
+      "Nothing to withdraw"
+      );
 
     uint256 vaultBalance = crownToken.balanceOf(address(this));
-    require(vaultBalance >= toTransfer, 
-           "Insuffcient funds in Vault Contract");      
+    require(vaultBalance >= emissions,
+          "Insuffcient funds in Vault Contract");        
+    calculatePerFarmEmissions();
+    emissions=0;
     
-    //startTime = block.timestamp;
+    for (
+      uint256 idx = 0;
+      idx < activeFarmTokens.length;
+      idx++
+      ) { 
+        uint256 toTransfer = 0;
+        address farmAddr = activeFarmTokens[idx];
+        toTransfer =perFarmEmissions[farmAddr];
 
-    (bool sent) = crownToken.transfer(farmAddress, toTransfer);
-    require(sent, "Failed to withdraw Tokens"); 
-    
-    emit EmissionsSent(farmAddress, toTransfer);
+        (bool sent) = crownToken.transfer(farmAddr, toTransfer);
+        require(sent, "Failed to withdraw Tokens");
+        
+        emit EmissionsSent(farmAddr, toTransfer);
+      }
   } 
 
-
   function calculateEmissions() public {
-      uint256 t0=0;
-      t0=lastEmissionsTime;
-      uint256 end = block.timestamp;
-      lastEmissionsTime=end;      
-      uint256 secondsPassed = (end - t0) * 10**18;   
-      emissions += (secondsPassed * 10**18)/ secondsPerToken ;
-      
-      uint256 available = crownToken.balanceOf(address(this));
-
-      if(emissions >  available){
-        emissions=available;
-      }    
+    uint256 t0=0;
+    t0=lastEmissionsTime;
+    uint256 end = block.timestamp;
+    lastEmissionsTime=end;      
+    uint256 secondsPassed = (end - t0) * 10**18;   
+    emissions += (secondsPassed * 10**18)/ secondsPerToken;
     
+    uint256 available = crownToken.balanceOf(address(this));
+    if(emissions >  available){
+      emissions=available;
+    }
     emit UpdateEmissions(emissions);
   }     
+
+  function calculatePerFarmEmissions() public {
+    for (
+      uint256 idx = 0;
+      idx < activeFarmTokens.length;
+      idx++
+      ) { 
+        address addr = activeFarmTokens[idx];
+        uint256 farmPercent = farms[addr];
+        perFarmEmissions[addr]= (emissions * farmPercent)/100;
+      }
+  }
 
 }

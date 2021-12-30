@@ -8,57 +8,58 @@ import "./Vault.sol";
 contract Farm is Ownable {
 
   string public name = "Crown Capital Farm";
+  
 
   address[] public stakers;
-    
+  address public crownAddress;
+  uint256 public farmStartTime;
+  uint256 public secondsPerToken;  
+  
+
   mapping(address => bool) public isStaking;
   mapping(address => uint256) public startTime; // Unrealized time
   mapping(address => uint256) public crownYield; // Yield to Claim
+  uint256 public totalStaked; // Total staked
   mapping(address => uint256) public stakingBalance; // Amount User is Staking
-  uint256 public secondsPerToken;
-  uint256 public farmStartTime;
 
   event Stake(address indexed from, uint256 amount);
   event Unstake(address indexed from, uint256 amount);
   event YieldWithdraw(address indexed to, uint256 amount);
 
-  CrownToken crownToken;
   Vault vault;
+  CrownToken crownToken;
   constructor(address tokenAddress, address vaultAddress) public {
     crownToken = CrownToken(tokenAddress);
+    crownAddress=tokenAddress;
     vault = Vault(vaultAddress);
     secondsPerToken = vault.secondsPerToken();
     farmStartTime = block.timestamp;
+    totalStaked=0;    
   }
 
 
   // Stake tokens to farm contract
   function stake(uint256 amountToStake) public {
       require(
-          amountToStake > 0, 
-          "You cannot stake zero tokens.");
+        amountToStake > 0, 
+        "You cannot stake zero tokens.");
       require(
-          crownToken.balanceOf(msg.sender) >= amountToStake, 
-          "You cannot stake more tokens than you own.");          
-
-      //if(isStaking[msg.sender]){
-      updateYield();
-      //}
+        crownToken.balanceOf(msg.sender) >= amountToStake, 
+        "You cannot stake more tokens than you own.");                
+      updateYield();  
        
       (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
       require(sent, "Failed to transfer tokens from user to Farm");
             
       if(stakingBalance[msg.sender] == 0){
           stakers.push(msg.sender);
-      }      
-      
+      }            
       stakingBalance[msg.sender] += amountToStake;
+      totalStaked+=amountToStake;
       isStaking[msg.sender] = true;
-      startTime[msg.sender] = block.timestamp;
-      
+      startTime[msg.sender] = block.timestamp;      
       emit Stake(msg.sender, amountToStake);
   }
-
 
   // Unstake tokens from farm contract
   function unstake(uint256 amountToUnstake) public {
@@ -67,12 +68,12 @@ contract Farm is Ownable {
       stakingBalance[msg.sender] >= amountToUnstake, 
       "Nothing to unstake"
     );
-
     updateYield();
 
     uint256 balTransfer = 0;
     balTransfer = amountToUnstake;
     stakingBalance[msg.sender] -= balTransfer;
+    totalStaked-= balTransfer;
     
     (bool sent) = crownToken.transfer(msg.sender, balTransfer);
     require(sent, "Failed to withdraw Tokens"); 
@@ -125,8 +126,8 @@ contract Farm is Ownable {
 
   function updateYield() public {    
     vault.sendToFarm();
-    uint256 totalStake = 0;
-    totalStake = totalStaked();
+    //uint256 totalStake = totalStaked;
+    //totalStake = totalStaked();
 
     for (
         uint256 stakersIndex = 0;
@@ -135,24 +136,10 @@ contract Farm is Ownable {
         ) {
             address staker = stakers[stakersIndex];
             uint256 rawYield = 0;
-            rawYield = calculateYieldTotal(staker, totalStake);
+            rawYield = calculateYieldTotal(staker);
             startTime[staker] = block.timestamp;
             crownYield[staker] += rawYield;          
           }
-  }
-
-
-  function totalStaked() public view returns(uint256) {    
-    uint256 totalStake = 0;
-    for (
-        uint256 stakersIndex = 0;
-        stakersIndex < stakers.length;
-        stakersIndex++
-        ) {
-            address staker = stakers[stakersIndex];
-            totalStake += stakingBalance[staker];
-        }
-        return totalStake;
   }
 
 
@@ -162,11 +149,10 @@ contract Farm is Ownable {
   }
 
 
-  function calculateYieldTotal(address staker, uint256 totalStake) private view returns(uint256) {
+  function calculateYieldTotal(address staker) private view returns(uint256) {
       uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
-      uint256 stakingPercent = userStakingPercent(staker, totalStake);
+      uint256 stakingPercent = userStakingPercent(staker, totalStaked);
       uint256 tokens = (stakingPercent * secondsPassed) / secondsPerToken;
-      //uint256 rawYield = (tokens * stakingBalance[staker] / totalStake);
       return tokens;
   } 
 
