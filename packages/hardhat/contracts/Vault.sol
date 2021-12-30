@@ -8,11 +8,15 @@ contract Vault is Ownable {
 
   string public name = "Crown Capital Vault";
   address public farmAddress = msg.sender;
-  uint256 public startTime; // Unrealized time
-  uint256 public emissions=0; // Tokens available for transfer
-  uint256 public secondsPassed=0;
-  uint256 public secondsPerToken=475646879756468800; // Set the contract payout rate [s]
+  uint256 public lastEmissionsTime; // Unrealized time
+  uint256 public emissions; // Tokens available for transfer
+  //uint256 public secondsPassed=0;
+  
+  uint256 public tokensPerSecond= 475646879756468797; // Set the contract payout rate [s]
+  uint256 public secondsPerToken=2102400000000000000; // Set the contract payout rate [s]
   //Actual rate: 75M/(5*365*24*3600) = 0.4756468797564688 Tokens per second
+  uint256 public vaultStartTime;
+  uint256 public secondsIn5Years=157680000;
 
   event EmissionsSent(address farmAddress, uint256 amount);
   event UpdateEmissions(uint256 emiss);
@@ -20,7 +24,9 @@ contract Vault is Ownable {
   CrownToken crownToken;
   constructor(address tokenAddress) public {
     crownToken = CrownToken(tokenAddress);
-    startTime=block.timestamp;
+    vaultStartTime=block.timestamp;
+    lastEmissionsTime=block.timestamp;
+    emissions=0;
   }
 
   
@@ -28,7 +34,6 @@ contract Vault is Ownable {
   function assignFarm(address newFarmAddress) public onlyOwner {
       //sendToFarm();
       farmAddress = newFarmAddress;
-      //console.log(msg.sender,"set farm address to", farmAddress);
   }
 
 
@@ -47,7 +52,7 @@ contract Vault is Ownable {
     require(vaultBalance >= toTransfer, 
            "Insuffcient funds in Vault Contract");      
     
-    startTime = block.timestamp;
+    //startTime = block.timestamp;
 
     (bool sent) = crownToken.transfer(farmAddress, toTransfer);
     require(sent, "Failed to withdraw Tokens"); 
@@ -58,18 +63,19 @@ contract Vault is Ownable {
 
   function calculateEmissions() public {
       uint256 t0=0;
-      t0=startTime;
+      t0=lastEmissionsTime;
       uint256 end = block.timestamp;
-      startTime=end;      
-      secondsPassed = (end - t0) * 10**18;   
+      lastEmissionsTime=end;      
+      uint256 secondsPassed = (end - t0) * 10**18;   
       emissions += (secondsPassed * 10**18)/ secondsPerToken ;
       
       uint256 available = crownToken.balanceOf(address(this));
 
       if(emissions >  available){
         emissions=available;
-      }
-      emit UpdateEmissions(emissions);
+      }    
+    
+    emit UpdateEmissions(emissions);
   }     
 
 }

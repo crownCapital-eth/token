@@ -15,7 +15,8 @@ contract Farm is Ownable {
   mapping(address => uint256) public startTime; // Unrealized time
   mapping(address => uint256) public crownYield; // Yield to Claim
   mapping(address => uint256) public stakingBalance; // Amount User is Staking
-
+  uint256 public secondsPerToken;
+  uint256 public farmStartTime;
 
   event Stake(address indexed from, uint256 amount);
   event Unstake(address indexed from, uint256 amount);
@@ -26,6 +27,8 @@ contract Farm is Ownable {
   constructor(address tokenAddress, address vaultAddress) public {
     crownToken = CrownToken(tokenAddress);
     vault = Vault(vaultAddress);
+    secondsPerToken = vault.secondsPerToken();
+    farmStartTime = block.timestamp;
   }
 
 
@@ -38,9 +41,9 @@ contract Farm is Ownable {
           crownToken.balanceOf(msg.sender) >= amountToStake, 
           "You cannot stake more tokens than you own.");          
 
-      if(isStaking[msg.sender]){
-        updateYield();
-      }
+      //if(isStaking[msg.sender]){
+      updateYield();
+      //}
        
       (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
       require(sent, "Failed to transfer tokens from user to Farm");
@@ -77,15 +80,17 @@ contract Farm is Ownable {
     if(stakingBalance[msg.sender] == 0){
       isStaking[msg.sender] = false;
 
-      for (
-        uint256 stakersIndex = 0;
-        stakersIndex < stakers.length;
-        stakersIndex++
-        ) {
-            if(msg.sender == stakers[stakersIndex]){
-                removeAddress(stakersIndex);
-            }
-          }
+      // if(stakers.length > 1){
+      //   for (
+      //     uint256 stakersIndex = 0;
+      //     stakersIndex < stakers.length;
+      //     stakersIndex++
+      //     ) {
+      //         if(msg.sender == stakers[stakersIndex]){
+      //             removeAddress(stakersIndex);
+      //         }
+      //       }
+      // }
     }
 
     emit Unstake(msg.sender, balTransfer);
@@ -108,15 +113,14 @@ contract Farm is Ownable {
 
     uint256 farmBalance = crownToken.balanceOf(address(this));
     require(farmBalance >= toTransfer, 
-           "Insuffcient funds in Farm Contract");      
+           "Insuffcient funds in Farm Contract");          
     
     startTime[msg.sender] = block.timestamp;
-
     (bool sent) = crownToken.transfer(msg.sender, toTransfer);
     require(sent, "Failed to withdraw Tokens"); 
     
     emit YieldWithdraw(msg.sender, toTransfer);
-  } 
+  }
 
 
   function updateYield() public {    
@@ -130,9 +134,8 @@ contract Farm is Ownable {
         stakersIndex++
         ) {
             address staker = stakers[stakersIndex];
-            uint256 stakingPercent = stakingBalance[staker] / totalStake;
-
-            uint256 rawYield = calculateYieldTotal(staker, totalStake);
+            uint256 rawYield = 0;
+            rawYield = calculateYieldTotal(staker, totalStake);
             startTime[staker] = block.timestamp;
             crownYield[staker] += rawYield;          
           }
@@ -153,18 +156,25 @@ contract Farm is Ownable {
   }
 
 
+  function userStakingPercent(address staker, uint256 totalStake) public view returns(uint256) {    
+    uint256 stakingPercent = (stakingBalance[staker]*10**18) / totalStake;
+    return stakingPercent;
+  }
+
+
   function calculateYieldTotal(address staker, uint256 totalStake) private view returns(uint256) {
       uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
-      uint256 secondsPerToken = 30;//86400;
-      uint256 tokens = secondsPassed / secondsPerToken;
-      uint256 rawYield = (tokens * stakingBalance[staker] / totalStake);
-      return rawYield;
+      uint256 stakingPercent = userStakingPercent(staker, totalStake);
+      uint256 tokens = (stakingPercent * secondsPassed) / secondsPerToken;
+      //uint256 rawYield = (tokens * stakingBalance[staker] / totalStake);
+      return tokens;
   } 
 
 
-  function calculateYieldTime(address user) private view returns(uint256){
+  function calculateYieldTime(address staker) public view returns(uint256){
+      uint256 totalTime = 0;
       uint256 end = block.timestamp;
-      uint256 totalTime = end - startTime[user];
+      totalTime = end - startTime[staker];
       return totalTime;
   }
 
@@ -173,10 +183,30 @@ contract Farm is Ownable {
     }
 
   function removeAddress(uint index) private {
-    // Move the last element into the place to delete
+    // Move the last element value into the index to be deleted
     stakers[index] = stakers[stakers.length - 1];
     // Remove the last element
     stakers.pop();
   }  
+
+  function getUserBalance(address staker) public view returns(uint256) {        
+    return stakingBalance[staker];
+  }
+
+  function getUserYield(address staker) public view returns(uint256) {        
+    return crownYield[staker];
+  }
+
+  function getUserstartTime(address staker) public view returns(uint256) {        
+    return startTime[staker];
+  }
+
+  function getSecondsPerToken() public view returns(uint256) {        
+    return secondsPerToken;
+  }
+
+  function getCurrentTime() public view returns(uint256) {        
+    return block.timestamp;
+  }
 
 }

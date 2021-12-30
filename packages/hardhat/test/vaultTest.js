@@ -7,7 +7,7 @@ const {Contract, utils, BigNumber} = require("ethers");
 
 use(solidity);
 
-describe("Yield Farm", () => {
+describe("Vault", () => {
   let owner;
   let addr1;
   let addr2;
@@ -66,8 +66,10 @@ describe("Yield Farm", () => {
 
   describe('Check Emissions', () => {
     it('Emissons 1 token per rate', async () => {      
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
       const secondsPerToken = await vaultContract.secondsPerToken();
-      expect(secondsPerToken).to.equal('475646879756468800');
+      expect(tokensPerSecond).to.equal('475646879756468797');
+      expect(secondsPerToken).to.equal('2102400000000000000');
       
       const t0_emissions=await vaultContract.emissions();
 
@@ -77,16 +79,14 @@ describe("Yield Farm", () => {
 
       await vaultContract.calculateEmissions();
       const t1_emissions=await vaultContract.emissions();
-      const secondsPassed = await vaultContract.secondsPassed();  
-
-      const expecteedEmissions = "21.023999999999999892"
+      const expecteedEmissions = "4.756468797564687975"
       expect(utils.formatEther(t1_emissions)).to.equal(expecteedEmissions);
-      });    
+      });
 
       it('Emissions do not exceed balance', async () => {
         // Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const seconsIn5Years = 200000000;
-        await ethers.provider.send("evm_increaseTime", [seconsIn5Years]);
+        const gtSecondsIn5Years = 200000000;
+        await ethers.provider.send("evm_increaseTime", [gtSecondsIn5Years]);
         await expect(vaultContract.calculateEmissions());         
 
         let t1_emissions=await vaultContract.emissions();
@@ -96,14 +96,14 @@ describe("Yield Farm", () => {
 
 
     it('Anyone can call calculateEmissions()', async () => {
+      const emissions0 = await vaultContract.emissions();
       // t0=1s, blocktime=5s
       // Total time increase = t0 + increaseTime + 1*blocktime = 10s
-      const expecteedEmissions = "21.023999999999999892"   
+      const expecteedEmissions = "4.756468797564687975"   
       const increaseTime = 4; //[s]
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       await vaultContract.connect(addr1).calculateEmissions();
       const emissions1 = await vaultContract.emissions();
-   
       expect(utils.formatEther(emissions1)).to.equal(expecteedEmissions);
     });
   });
@@ -126,37 +126,14 @@ describe("Yield Farm", () => {
       const newFarmAddress = await vaultContract.farmAddress();
       expect(newFarmAddress).to.equal(owner.address);
     });       
-    
-    // it('assignFarm sends all emissions to previous farm on Call', async () => {
-    //   const blockTime = 5     
-    //   await ethers.provider.send("evm_increaseTime", [blockTime]);
-    //   await vaultContract.calculateEmissions();
-    //   const emissions = await vaultContract.emissions();
-    //   const expectedEmissions = "21.023999999999999892"
-    //   //expect(utils.formatEther(t1_emissions)).to.equal(expectedEmissions);
 
-    //   await vaultContract.connect(owner).assignFarm(owner.address);
-    //   const newEmissions = await vaultContract.emissions();
-    //   const oldFarmBalance = await tokenContract.balanceOf(farmContract.address);
-
-    //   console.log("Old Emissions", utils.formatEther(emissions));
-    //   console.log("Expected Emissions", expectedEmissions);
-
-      
-    //   console.log("New Emissions should be 0", (newEmissions).toString());
-    //   console.log("Old Farm Balance", utils.formatEther(oldFarmBalance));
-
-    //   const newFarmAddress = await vaultContract.farmAddress();
-    //   //expect(newFarmAddress).to.equal(owner.address);
-
-    // });  
   });
 
   describe('Test sendToFarm() method', () => {
     it('Check Send Emissions to Farm', async () => {
       // t0=1s, blocktime=5s
       // Total time increase = t0 + increaseTime + 1*blocktime = 10s
-      const expectedEmissions = "21.023999999999999892"      
+      const expectedEmissions = "4.756468797564687975"      
       const increaseTime = 4;
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       
@@ -171,23 +148,3 @@ describe("Yield Farm", () => {
   });
 
 });
-
-
-
-      //const expecteedEmissions = BigNumber.from((utils.formatEther(secondsPassed.div(secondsPerToken))).toString());
-      //const expecteedEmissions =  utils.parseEther((secondsPassed.div(secondsPerToken)).toString() );
-      // expecteedEmissions = (10*10**18)/475646879756468800)
-
-
-      // const balance = BigNumber.from('475646879756468800');
-      // // const timePassed = BigNumber.from(totalTime);
-      // // const expecteedEmissions = timePassed.div(secondsPerToken);
-
-      // const remainder = t1_emissions.mod(1e15);
-      // console.log(utils.formatEther(t1_emissions.sub(remainder)));
-
-      // // Round decimals
-      // let res = utils.formatEther(t1_emissions);
-      // res = Math.round(res * 1e2) / 1e1;
-      // const roundedT1Emissions=BigNumber.from((res*10**18).toString())
-      // console.log(roundedT1Emissions.toString());
