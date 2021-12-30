@@ -596,7 +596,7 @@ function App(props) {
                 renderItem={item => {
                   return (
                     <List.Item key={item.blockNumber + item.blockHash}>
-                       staked
+                      {item.args[0]} staked
                       <Balance balance={item.args[1]} />
                       Tokens
                     </List.Item>
@@ -612,7 +612,7 @@ function App(props) {
                 renderItem={item => {
                   return (
                     <List.Item key={item.blockNumber + item.blockHash}>
-                      <Address value={item.args[0]} ensProvider={mainnetProvider} fontSize={16} /> unstaked
+                      {item.args[0]} unstaked
                       <Balance balance={item.args[1]} />
                       Tokens
                     </List.Item>
