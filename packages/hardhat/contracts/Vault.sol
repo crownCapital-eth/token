@@ -57,17 +57,8 @@ contract Vault is Ownable {
       "To set farm at least 1 farm must be initialized"
     );
 
-    // Require percent == 100
-    uint256 totalPercent = 0;
-    for (
-      uint256 idx = 0;
-      idx < farmPercents.length;
-      idx++
-      ) {        
-        totalPercent+=farmPercents[idx];
-        }
-    require(totalPercent==100, "Total Percent is greater than 100");
-    
+    uint256 totalPercent=calculateTotalPercent();
+    require(totalPercent==100, "Total Percent must be 100");
     delete activeFarmTokens;
     // SET NEW FARMS
     for (
@@ -82,6 +73,18 @@ contract Vault is Ownable {
     
     delete farmTokens;
     delete farmPercents;
+  }
+
+  function calculateTotalPercent() public view onlyOwner returns (uint256){
+    uint256 totalPercent = 0;
+    for (
+      uint256 idx = 0;
+      idx < farmPercents.length;
+      idx++
+      ) {        
+        totalPercent+=farmPercents[idx];
+        }
+    return totalPercent;
   }
 
   function resetInitialization() public onlyOwner {
@@ -147,6 +150,18 @@ contract Vault is Ownable {
         uint256 farmPercent = farms[addr];
         perFarmEmissions[addr]= (emissions * farmPercent)/100;
       }
+  }
+
+  function getFarmTokens() public view returns (address[] memory) {
+      return farmTokens;
+  }
+
+  function getFarmPercents() public view returns (uint256[] memory) {
+      return farmPercents;
+  }
+
+  function getActiveFarmTokens() public view returns (address[] memory) {
+      return activeFarmTokens;
   }
 
 }
