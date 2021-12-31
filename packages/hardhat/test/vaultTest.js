@@ -1,11 +1,10 @@
 const { ethers } = require("hardhat");
 const { use, expect } = require("chai");
 const { solidity } = require("ethereum-waffle");
-const {Contract, utils, BigNumber} = require("ethers");
-//const { getRsBlockTable } = require("qrcode-terminal/vendor/QRCode/QRRSBlock");
-//const { time } = require("@openzeppelin/test-helpers");
-
 use(solidity);
+const {Contract, utils, BigNumber} = require("ethers");
+
+//use(solidity);
 
 describe("Vault", () => {
   let owner;
@@ -42,7 +41,6 @@ describe("Vault", () => {
     await tokenContract.transfer(owner.address, ethers.utils.parseEther('25000000'));
     
     // Set the Farm Address
-    console.log("\n Set Farm address to Farm Contract\n");
     await vaultContract.initializeFarm(farmContract.address, 100); 
     await vaultContract.setFarms();
 
@@ -108,7 +106,7 @@ describe("Vault", () => {
     });
   });
 
-  describe('Test assignFarm() method', () => {
+  describe('Test initialize Farm method', () => {
     it('Check Farm Address', async () => {    
       const vaultFarmAddress = await vaultContract.activeFarmTokens(0);          
       const farmAddress = await farmContract.address;
@@ -132,6 +130,28 @@ describe("Vault", () => {
         vaultContract.connect(addr1).setFarms())
         .to.be.revertedWith('Ownable: caller is not the owner');
     });    
+
+    it('initializeFarm reverted because percent out of range', async () => {
+      await expect(
+        vaultContract.initializeFarm(farmContract.address, 101))
+        .to.be.revertedWith('Percent must be between 0 and 100');
+    });    
+
+    it('setFarms reverted because no farms initialized', async () => {
+      await expect(
+        vaultContract.setFarms())
+        .to.be.revertedWith("To set farm at least 1 farm must be initialized");
+    }); 
+
+    it('setFarms reverted because percent > 100', async () => {
+      await vaultContract.initializeFarm(farmContract.address, 55);
+      await vaultContract.initializeFarm(addr1.address, 55);
+      await expect(
+        vaultContract.setFarms())
+        .to.be.revertedWith("Total Percent is greater than 100");
+    }); 
+
+
     // it('assignFarm success', async () => {
     //   await vaultContract.connect(owner).assignFarm(owner.address);
     //   const newFarmAddress = await vaultContract.ifarmAddress();

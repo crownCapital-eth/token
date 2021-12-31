@@ -34,11 +34,9 @@ contract Vault is Ownable {
     vaultStartTime=block.timestamp;
     lastEmissionsTime=block.timestamp;
     emissions=0;
-    //initializeFarm(tokenAddress, 100);
-    //setFarms();
   }
   
-  function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner{
+  function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner {
     require(
       percent>=0 && percent<=100,
       "Percent must be between 0 and 100"
@@ -47,19 +45,16 @@ contract Vault is Ownable {
     farmPercents.push(percent);    
   }
 
-  function resetInitialization() public onlyOwner {
-    delete farmTokens;
-    delete farmPercents;
-  }
-
-  function killFarms() public onlyOwner {
-    delete activeFarmTokens;
-  }
 
   function setFarms() public onlyOwner{   
     require(
       farmTokens.length == farmPercents.length,
       "Addresses and percents must be of equal length"
+    );
+
+    require(
+      farmTokens.length >= 1,
+      "To set farm at least 1 farm must be initialized"
     );
 
     // Require percent == 100
@@ -71,7 +66,7 @@ contract Vault is Ownable {
       ) {        
         totalPercent+=farmPercents[idx];
         }
-    require(totalPercent==100, "Total Percent must be 100");
+    require(totalPercent==100, "Total Percent is greater than 100");
     
     delete activeFarmTokens;
     // SET NEW FARMS
@@ -87,6 +82,15 @@ contract Vault is Ownable {
     
     delete farmTokens;
     delete farmPercents;
+  }
+
+  function resetInitialization() public onlyOwner {
+    delete farmTokens;
+    delete farmPercents;
+  }
+
+  function killFarms() public onlyOwner {
+    delete activeFarmTokens;
   }
 
   function sendToFarm() public {    
