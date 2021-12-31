@@ -4,7 +4,13 @@ const { solidity } = require("ethereum-waffle");
 use(solidity);
 const {Contract, utils, BigNumber} = require("ethers");
 
-//use(solidity);
+async function getCurrentTime() {
+  const blockNum = await ethers.provider.getBlockNumber();
+  const currentBlock = await ethers.provider.getBlock(blockNum);
+  var currentTime = BigNumber.from(currentBlock.timestamp);
+  return currentTime;
+};
+
 
 describe("Vault", () => {
   let owner;
@@ -19,7 +25,11 @@ describe("Vault", () => {
 
   let vaultTokensSupply;
   let FarmTokensSupply;
-  let tokensPerEth;
+  const tolerance = utils.parseEther("0.0001")
+
+
+
+
 
   beforeEach(async () => {
     // eslint-disable-next-line no-unused-vars
@@ -56,36 +66,46 @@ describe("Vault", () => {
   });
 
 
-  describe('Check Initial Token Amount', () => {
-    it('Initial value is 75,000,000', async () => {
+
+
+  describe('Check Initial vaules', () => {
+    it('Tokens in vault is 75,000,000', async () => {
       const balance = await tokenContract.balanceOf(vaultContract.address);
       expect(ethers.utils.formatEther(balance)).to.equal('75000000.0');
+    });
+
+    it('Emissions rate', async () => {
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const secondsPerToken = await vaultContract.secondsPerToken();
+      expect(tokensPerSecond).to.equal('475646879756468797');
+      expect(secondsPerToken).to.equal('2102400000000000000');
     });
   });
 
   describe('Check Emissions', () => {
     it('Emissons 1 token per rate', async () => {      
-      const tokensPerSecond = await vaultContract.tokensPerSecond();
-      const secondsPerToken = await vaultContract.secondsPerToken();
-      expect(tokensPerSecond).to.equal('475646879756468797');
-      expect(secondsPerToken).to.equal('2102400000000000000');
-      
-      const t0_emissions=await vaultContract.emissions();
-
-      const blockTime = 3     
-      await ethers.provider.send("evm_increaseTime", [blockTime]);
-      const totalTime = 2*blockTime;
-
+      // ACTION: Define Amounts
+      const tokensPerSecond = await vaultContract.tokensPerSecond();      
+      const t0 = await vaultContract.vaultStartTime();
+      // ACTION: Increase Time
+      const increaseTime = 3;
+      await ethers.provider.send("evm_increaseTime", [increaseTime]);
+      // ACTION: Update Emissions
       await vaultContract.calculateEmissions();
+      // ACTION: Current time and seconds passed
+      var currentTime = await getCurrentTime()
+      const secondsPassed = currentTime.sub(t0);
+      // ACTION: Calculate Expected Emissions
+      const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
       const t1_emissions=await vaultContract.emissions();
-      const expecteedEmissions = "4.756468797564687975"
-      expect(utils.formatEther(t1_emissions)).to.equal(expecteedEmissions);
+      // CHECK: Emissions
+      expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
       });
 
-      it('Emissions do not exceed balance', async () => {
+      it('Emissions does not exceed balance', async () => {
         // Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const gtSecondsIn5Years = 200000000;
-        await ethers.provider.send("evm_increaseTime", [gtSecondsIn5Years]);
+        const greaterThantSecondsIn5Years = 200000000;
+        await ethers.provider.send("evm_increaseTime", [greaterThantSecondsIn5Years]);
         await expect(vaultContract.calculateEmissions());         
 
         let t1_emissions=await vaultContract.emissions();
@@ -107,7 +127,7 @@ describe("Vault", () => {
     });
   });
 
-  describe('killFarm Farm method', () => {
+  describe('killFarms Farm method', () => {
     it('Check Farm Address', async () => {    
       const vaultFarmAddress = await vaultContract.activeFarmTokens(0);          
       const farmAddress = await farmContract.address;
