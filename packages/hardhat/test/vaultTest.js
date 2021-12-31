@@ -65,8 +65,69 @@ describe("Vault", () => {
     ownerTokenSupply  = await tokenContract.balanceOf(owner.address);
   });
 
+  describe('Anyone can call', () => {  
+    it('calculateEmissions()', async () => {
+      expect(await vaultContract.connect(addr1).calculateEmissions())
+      .to.be.ok;
+    });
 
+    it('sendToFarm()', async () => {
+      expect(await vaultContract.connect(addr1).sendToFarm())
+      .to.be.ok;
+    });
 
+    it('calculatePerFarmEmissions()', async () => {
+      expect(await vaultContract.connect(addr1).calculatePerFarmEmissions())
+      .to.be.ok;
+    });
+
+    it('getFarmTokens()', async () => {
+      expect(await vaultContract.connect(addr1).getFarmTokens())
+      .to.be.ok;
+    });
+
+    it('getFarmPercents()', async () => {
+      expect(await vaultContract.connect(addr1).getFarmPercents())
+      .to.be.ok;
+    });
+
+    it('getActiveFarmTokens()', async () => {
+      expect(await vaultContract.connect(addr1).getActiveFarmTokens())
+      .to.be.ok;
+    });
+  });
+
+  describe('Only Owner', () => {
+    it('initializeFarm', async () => {
+      await expect(
+        vaultContract.connect(addr1).initializeFarm(addr1.address, 100))
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('setFarms', async () => {
+      await expect(
+        vaultContract.connect(addr1).setFarms())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('resetInitialization', async () => {
+      await expect(
+        vaultContract.connect(addr1).resetInitialization())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('killFarms', async () => {
+      await expect(
+        vaultContract.connect(addr1).killFarms())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('calculateTotalPercent', async () => {
+      await expect(
+        vaultContract.connect(addr1).calculateTotalPercent())
+        .to.be.revertedWith('Ownable: caller is not the owner');
+    });
+  });
 
   describe('Check Initial vaules', () => {
     it('Tokens in vault is 75,000,000', async () => {
@@ -83,7 +144,7 @@ describe("Vault", () => {
   });
 
   describe('Check Emissions', () => {
-    it('Emissons 1 token per rate', async () => {      
+    it('Total Emissons at expected rate', async () => { 
       // ACTION: Define Amounts
       const tokensPerSecond = await vaultContract.tokensPerSecond();      
       const t0 = await vaultContract.vaultStartTime();
@@ -103,28 +164,20 @@ describe("Vault", () => {
       });
 
       it('Emissions does not exceed balance', async () => {
-        // Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const greaterThantSecondsIn5Years = 200000000;
-        await ethers.provider.send("evm_increaseTime", [greaterThantSecondsIn5Years]);
+        // ACTION: Set parameters
+        const initialBalance = await tokenContract.balanceOf(vaultContract.address);
+          // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+        const greaterThanSecondsIn5Years = 200000000;
+        // ACTION: Increase time
+        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
         await expect(vaultContract.calculateEmissions());         
-
-        let t1_emissions=await vaultContract.emissions();
-        t1_emissions = utils.formatEther(t1_emissions);
-        expect(t1_emissions.toString()).to.equal("75000000.0");
+        // Check: emissions == initialBalance
+        var t1_emissions=await vaultContract.emissions();
+        expect(t1_emissions).to.equal(initialBalance);
       });
 
 
-    it('Anyone can call calculateEmissions()', async () => {
-      const emissions0 = await vaultContract.emissions();
-      // t0=1s, blocktime=5s
-      // Total time increase = t0 + increaseTime + 1*blocktime = 10s
-      const expecteedEmissions = "4.756468797564687975"   
-      const increaseTime = 3; //[s]
-      await ethers.provider.send("evm_increaseTime", [increaseTime]);
-      await vaultContract.connect(addr1).calculateEmissions();
-      const emissions1 = await vaultContract.emissions();
-      expect(utils.formatEther(emissions1)).to.equal(expecteedEmissions);
-    });
+
   });
 
   describe('killFarms Farm method', () => {
@@ -215,38 +268,7 @@ describe("Vault", () => {
 
   });
 
-  describe('Only Owner', () => {
-    it('initializeFarm', async () => {
-      await expect(
-        vaultContract.connect(addr1).initializeFarm(addr1.address, 100))
-        .to.be.revertedWith('Ownable: caller is not the owner');
-    });
 
-    it('setFarms', async () => {
-      await expect(
-        vaultContract.connect(addr1).setFarms())
-        .to.be.revertedWith('Ownable: caller is not the owner');
-    });
-
-    it('resetInitialization', async () => {
-      await expect(
-        vaultContract.connect(addr1).resetInitialization())
-        .to.be.revertedWith('Ownable: caller is not the owner');
-    });
-
-    it('killFarms', async () => {
-      await expect(
-        vaultContract.connect(addr1).killFarms())
-        .to.be.revertedWith('Ownable: caller is not the owner');
-    });
-
-    it('calculateTotalPercent', async () => {
-      await expect(
-        vaultContract.connect(addr1).calculateTotalPercent())
-        .to.be.revertedWith('Ownable: caller is not the owner');
-    });
-
-  });
 
   describe('Test sendToFarm() method', () => {
     it('Check Send Emissions to Farm', async () => {
