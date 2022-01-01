@@ -153,15 +153,15 @@ contract Vault is Ownable {
   }
 
   function getFarmTokens() public view returns (address[] memory) {
-      return farmTokens;
+    return farmTokens;
   }
 
   function getFarmPercents() public view returns (uint256[] memory) {
-      return farmPercents;
+    return farmPercents;
   }
 
   function getActiveFarmTokens() public view returns (address[] memory) {
-      return activeFarmTokens;
+    return activeFarmTokens;
   }
 
   function getActiveFarmPercents(address farmAddr) public view returns(uint256) {        

@@ -555,11 +555,13 @@ describe("Vault", () => {
   });
 
 
-  describe('killActiveFarms Farm method', () => {
-    it('Check Farm Address', async () => {    
-      const vaultFarmAddress = await vaultContract.activeFarmTokens(0);          
-      const farmAddress = await farmContract.address;
-      expect(vaultFarmAddress).to.equal(farmAddress);      
+  describe('killActiveFarms()', () => {
+    it('Check Farm Address', async () => {   
+      // ACTION: Kill Active Farms 
+      await vaultContract.killActiveFarms();
+      // CHECK: No active addresses
+      const farmAddresses = await vaultContract.getActiveFarmTokens();
+      expect(farmAddresses[0]).to.equal();
     });
   });  
 
