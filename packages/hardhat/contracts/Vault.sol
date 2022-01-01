@@ -13,9 +13,8 @@ contract Vault is Ownable {
   address[] public activeFarmTokens;
   //mapping(address => bool) public  isFarm;
   mapping(address => uint256) public perFarmEmissions; // token contract to yield % of emissions from vault
-  mapping(address => uint256) public farms;
+  mapping(address => uint256) public activeFarmPercents;
 
-  //address public ifarmAddress = msg.sender;
   uint256 public lastEmissionsTime; // Unrealized time
   uint256 public emissions; // Tokens available for transfer
   
@@ -41,6 +40,7 @@ contract Vault is Ownable {
       percent>=0 && percent<=100,
       "Percent must be between 0 and 100"
     );
+
     farmTokens.push(tokenAddress);
     farmPercents.push(percent);    
   }
@@ -48,18 +48,18 @@ contract Vault is Ownable {
 
   function setFarms() public onlyOwner{   
     require(
-      farmTokens.length == farmPercents.length,
-      "Addresses and percents must be of equal length"
-    );
-
-    require(
       farmTokens.length >= 1,
       "To set farm at least 1 farm must be initialized"
     );
 
+    require(
+      farmTokens.length == farmPercents.length,
+      "Addresses and percents must be of equal length"
+    );
+
     uint256 totalPercent=calculateTotalPercent();
     require(totalPercent==100, "Total Percent must be 100");
-    delete activeFarmTokens;
+    killActiveFarms();
     // SET NEW FARMS
     for (
       uint256 idx = 0;
@@ -67,7 +67,7 @@ contract Vault is Ownable {
       idx++
       ) {        
         address addr = farmTokens[idx];
-        farms[addr]=farmPercents[idx];
+        activeFarmPercents[addr]=farmPercents[idx];
         activeFarmTokens.push(addr);
         }
     
@@ -92,7 +92,7 @@ contract Vault is Ownable {
     delete farmPercents;
   }
 
-  function killFarms() public onlyOwner {
+  function killActiveFarms() public onlyOwner {
     delete activeFarmTokens;
   }
 
@@ -147,7 +147,7 @@ contract Vault is Ownable {
       idx++
       ) { 
         address addr = activeFarmTokens[idx];
-        uint256 farmPercent = farms[addr];
+        uint256 farmPercent = activeFarmPercents[addr];
         perFarmEmissions[addr]= (emissions * farmPercent)/100;
       }
   }
@@ -162,6 +162,14 @@ contract Vault is Ownable {
 
   function getActiveFarmTokens() public view returns (address[] memory) {
       return activeFarmTokens;
+  }
+
+  function getActiveFarmPercents(address farmAddr) public view returns(uint256) {        
+    return activeFarmPercents[farmAddr];
+  }
+
+  function getPerFarmEmissions(address farmAddr) public view returns(uint256) {        
+    return perFarmEmissions[farmAddr];
   }
 
 }
