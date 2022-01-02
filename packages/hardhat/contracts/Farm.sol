@@ -36,6 +36,8 @@ contract Farm is Ownable {
     totalStaked=0;    
   }
 
+  //TODO: ADD switch for canStake, canWithdraw, 
+
   function stake(uint256 amountToStake) public {
     require(
       amountToStake > 0, 

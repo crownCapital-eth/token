@@ -448,6 +448,47 @@ describe("Yield Farm", () => {
       expect(crownYield).to.equal(totalYield);
     }); 
 
+  });
+
+  describe('withdrawYield()', () => {
+    it('Reverts: No yield to withdarw', async () => {
+      await expect(farmContract.withdrawYield())
+      .to.be.revertedWith("Nothing to withdraw");
+    });
+
+    it('Emits Event', async () => {
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      stakeAmount=ethers.utils.parseEther('100');
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      await farmContract.unstake(stakeAmount);
+      await expect(farmContract.withdrawYield())
+        .to.emit(farmContract, 'YieldWithdraw')
+        .withArgs(owner.address, tokensPerSecond);
+    });
+
+    
+    it('1 Staker Final Balance', async () => {
+      // ACTION: Intialize case
+      initialBalance  = await tokenContract.balanceOf(owner.address); 
+      stakeAmount=ethers.utils.parseEther('50');
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const expectedEmissions = tokensPerSecond;
+      // ACTION: Approve, stake, unstake, withdraw
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      await farmContract.unstake(stakeAmount);
+      await farmContract.withdrawYield();
+      // CHECK: Balance
+      finalBalance  = await tokenContract.balanceOf(owner.address); 
+      expect(finalBalance).to.equal(initialBalance.add(expectedEmissions));
+      // Check: Yield
+      const yield = await farmContract.calculateUserTotalYield(owner.address);
+      expect(yield).to.equal(0);
+    }); 
+  });
+
+  describe('Full cycle: Stake, unstake, Claim Yield', () => {
     it('2 Staker Yield 50/50', async () => {
       /*=================================================
       This will have 2 users stake 50/50.
@@ -590,9 +631,9 @@ describe("Yield Farm", () => {
       const expectedstaker3Yield=tokensPerSecond.mul(1416666667).div(1000000000);
       const expectedstaker4Yield=tokensPerSecond.mul(2083333333).div(1000000000);
       const expectedTotalYield=expectedstaker1Yield
-                               .add(expectedstaker2Yield)
-                               .add(expectedstaker3Yield)
-                               .add(expectedstaker4Yield);
+                              .add(expectedstaker2Yield)
+                              .add(expectedstaker3Yield)
+                              .add(expectedstaker4Yield);
 
       // APPROVE TOKENS TO STAKE
       await tokenContract.approve(farmContract.address, staker1Amount);
@@ -659,25 +700,6 @@ describe("Yield Farm", () => {
       expect(yield1.add(yield2).add(yield3).add(yield4)).to.
       be.closeTo(expectedTotalYield, tolerance);
 
-    });
-  });
-
-  describe('withdrawYield()', () => {
-    it('Reverts: No yield to withdarw', async () => {
-      await expect(farmContract.withdrawYield())
-      .to.be.revertedWith("Nothing to withdraw");
-    });
-
-    it('Emits Event', async () => {
-      const tokensPerSecond = await vaultContract.tokensPerSecond();
-      stakeAmount=ethers.utils.parseEther('100');
-      await tokenContract.approve(farmContract.address, stakeAmount);
-      await farmContract.stake(stakeAmount);
-      await farmContract.unstake(stakeAmount);
-      const expectedEmissions = tokensPerSecond;
-      await expect(farmContract.withdrawYield())
-        .to.emit(farmContract, 'YieldWithdraw')
-        .withArgs(owner.address, tokensPerSecond);
     });
   });
 
