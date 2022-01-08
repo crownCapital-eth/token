@@ -1,21 +1,55 @@
-# 🏗 scaffold-eth | 🏰 BuidlGuidl
+# Crown Capital Web3
+
+This repo contains the Crown Capital contracts and front end. 
+The contracts will be deployed on the Arbitrum network. There are three contracts
+  1. CrownToken.sol
+  2. Vault.sol
+  3. Farm.sol
+The requirements of each of these contracts are as follows:
+
+**CrownToken.sol**
+  - The token shall be an ERC20 standard.
+  - The token shall be called "CROWN"
+  - The token shall be hard-capped at 100,000,000 Tokens.
+  - The token shall be 100% premined.
+  - 75% of the token supply shall go into a time-released vault.
+  - 25% of the token supply shall go to the DAO multisig.
+  - The token shall be utilizable in DAO governance (e.g. Snapshot).
+
+**Vault.sol**
+  - The vault shall initially contain 75% of the token supply.
+  - The vault shall emit 100% tokens in the vault linearly from time zero to five years.
+  - The vault shall not allow any changes to the emission schedule.
+  - The vault owner shall be able to emit to a configurable number of farms (addresses).
+  - The vault owner shall be able to add or remove farms at any time.
+
+**Farm.sol**
+  - The farm shall pay in $CROWN.
+  - The farm shall accept $CROWN for staking.
+  - The farm shall pay addresses who stake $CROWN based on their percent of the total stake.
+  - The farm shall allow stakers to unstake at any time.
+  - The farm shall allow stakers to claim yield at any time.
+
+
+On deployment, 100% of the staking power will go towards the single token Crown staking farm. Tokens
+will then be used to initialize a Sushi LP farm against USDC. Once this token is created `Farm.sol` 
+will be deployed again using the sushi LP token address as the staking token.
+The `vault.sol` contract will then be updated to send 60% of emissions to the Sushi LP token farm
+and 40% of emissions to the single token Crown farm.
 
 ---
 
-### Checkpoint 0: 📦 install 📚
+### Install
 
 ```bash
-git clone https://github.com/scaffold-eth/scaffold-eth-challenges challenge-2-token-vendor
-cd challenge-2-token-vendor
-git checkout challenge-2-token-vendor
 yarn install
 ```
 
 ---
 
-### Checkpoint 1: 🔭 Environment 📺
+### Run Locally
 
-You'll have three terminals up for:
+Open three terminals 
 
 `yarn chain` (hardhat backend)
 
@@ -23,59 +57,25 @@ You'll have three terminals up for:
 
 `yarn deploy` (to compile, deploy, and publish your contracts to the frontend)
 
-> 👀 Visit your frontend at http://localhost:3000
+> http://localhost:3000
 
-> 👩‍💻 Rerun `yarn deploy --reset` whenever you want to deploy new contracts to the frontend.
+> Rerun `yarn deploy --reset` to deploy new contracts to the frontend.
 
-> ignore any warnings, we'll get to that...
 
 ---
 
+### Deploy to testnet
 
-### Checkpoint 5: 💾 Deploy it! 🛰
+`yarn deploy`
 
-📡 Edit the `defaultNetwork` in `packages/hardhat/hardhat.config.js`, as well as `targetNetwork` in `packages/react-app/src/App.jsx`, to [your choice of public EVM networks](https://ethereum.org/en/developers/docs/networks/)
 
-👩‍🚀 You will want to run `yarn account` to see if you have a **deployer address**.
+### Package for production
 
-🔐 If you don't have one, run `yarn generate` to create a mnemonic and save it locally for deploying.
-
-🛰 Use a faucet like [faucet.paradigm.xyz](https://faucet.paradigm.xyz/) to fund your **deployer address** (run `yarn account` again to view balances)
-
-> 🚀 Run `yarn deploy` to deploy to your public network of choice (😅 wherever you can get ⛽️ gas)
-
-🔬 Inspect the block explorer for the network you deployed to... make sure your contract is there.
-
-👮 Your token contract source needs to be **verified** 🔃 (source code publicly available on the block explorer).
-
-📠 You will need a Etherscan API key for this and you can get on by creating a free account at [etherscan.io](https://etherscan.io). Add your key to the `hardhat.config` file
-at around line 258. The verify script is at the bottom of `00_deploy_your_token.js`. You will see something like this after successful completion.
-
-⚔️ Side Quest: 🔂 use this same methodology to verify the Vendor contract.
-
-### Checkpoint 6: 🚢 Ship it! 🚁
-
-📦 Run `yarn build` to package up your frontend.
-
-💽 Upload your app to surge with `yarn surge` (you could also `yarn s3` or maybe even `yarn ipfs`?)
-
-🚔 Traffic to your url might break the [Infura](https://infura.io/) rate limit, edit your key: `constants.js` in `packages/ract-app/src`.
-
-🎖 Show off your app by pasting the url in the [Challenge 2 telegram channel](https://t.me/joinchat/IfARhZFc5bfPwpjq) 🎖
+`yarn build`
 
 ---
-### Checkpoint 7: 📜 Contract Verification
+### Verify contract on Etherscan
 
-Update the api-key in packages/hardhat/package.json file. You can get your key [here](https://etherscan.io/myapikey).
-
-![Screen Shot 2021-11-30 at 10 21 01 AM](https://user-images.githubusercontent.com/9419140/144075208-c50b70aa-345f-4e36-81d6-becaa5f74857.png)
-
-> Now you are ready to run the `yarn verify --network your_network` command to verify your contracts on etherscan 🛰
-
-This will be the URL you submit to [SpeedRun](https://speedrunethereum.com).
+`yarn verify --network your_network`
 
 ---
-
-> 🏃 Head to your next challenge [here](https://speedrunethereum.com).
-
-> 💬 Problems, questions, comments on the stack? Post them to the [🏗 scaffold-eth developers chat](https://t.me/joinchat/F7nCRK3kI93PoCOk)

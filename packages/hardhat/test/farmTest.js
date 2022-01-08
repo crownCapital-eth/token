@@ -2,10 +2,16 @@ const { ethers } = require("hardhat");
 const { use, expect, util } = require("chai");
 const { solidity } = require("ethereum-waffle");
 const {Contract, utils, BigNumber} = require("ethers");
-//const { getRsBlockTable } = require("qrcode-terminal/vendor/QRCode/QRRSBlock");
-//const { time } = require("@openzeppelin/test-helpers");
+
 
 use(solidity);
+
+async function getCurrentTime() {
+  const blockNum = await ethers.provider.getBlockNumber();
+  const currentBlock = await ethers.provider.getBlock(blockNum);
+  var currentTime = BigNumber.from(currentBlock.timestamp);
+  return currentTime;
+};
 
 describe("Yield Farm", () => {
   let owner;
@@ -21,6 +27,7 @@ describe("Yield Farm", () => {
   let vaultTokensSupply;
   let FarmTokensSupply;
   let tokensPerEth;
+  const tolerance = utils.parseEther("0.0001")
 
   beforeEach(async () => {
     // eslint-disable-next-line no-unused-vars
@@ -43,7 +50,8 @@ describe("Yield Farm", () => {
     await tokenContract.transfer(owner.address, ethers.utils.parseEther('25000000'));
     
     // Set the Farm Address
-    const setFarmAddress = await vaultContract.assignFarm(farmContract.address); 
+    await vaultContract.initializeFarm(farmContract.address, 100); 
+    await vaultContract.setFarms();
 
     // Transfer Ownership
     await vaultContract.transferOwnership(owner.address);
@@ -53,63 +61,434 @@ describe("Yield Farm", () => {
     vaultTokensSupply = await tokenContract.balanceOf(vaultContract.address);
     farmTokensSupply = await tokenContract.balanceOf(farmContract.address);    
     ownerTokenSupply  = await tokenContract.balanceOf(owner.address);
-    //tokensPerEth = await vendorContract.tokensPerEth();
+  });
+
+  describe('Anyone can call', () => {  
+    it('stake()', async () => {
+      const stakeAmount = 100;
+      await tokenContract.transfer(addr1.address, stakeAmount);
+      await tokenContract.connect(addr1)
+        .approve(farmContract.address, stakeAmount);
+      expect(await farmContract.connect(addr1).stake(stakeAmount))
+      .to.be.ok;
+    });
+    
+    it('unstake()', async () => {
+      const stakeAmount = 100;
+      await tokenContract.transfer(addr1.address, stakeAmount);
+      await tokenContract.connect(addr1)
+        .approve(farmContract.address, stakeAmount);
+      await farmContract.connect(addr1).stake(stakeAmount);
+      expect(await farmContract.connect(addr1).unstake(stakeAmount))
+      .to.be.ok;
+    });
+
+    it('withdrawYield()', async () => {
+      const stakeAmount = 100;
+      await tokenContract.transfer(addr1.address, stakeAmount);
+      await tokenContract.connect(addr1)
+        .approve(farmContract.address, stakeAmount);
+      await farmContract.connect(addr1).stake(stakeAmount);
+      await farmContract.connect(addr1).unstake(stakeAmount);
+      expect(await farmContract.connect(addr1).withdrawYield())
+      .to.be.ok;
+    });
+
+    it('userStakingPercent()', async () => {
+      expect(await farmContract.connect(addr1).userStakingPercent(addr1.address))
+      .to.be.ok;
+    });
+
+    it('calculateUserTotalYield()', async () => {
+      expect(await farmContract.connect(addr1).calculateUserTotalYield(addr1.address))
+      .to.be.ok;
+    });
+
+    it('calculateYieldTime()', async () => {
+      expect(await farmContract.connect(addr1).calculateYieldTime(addr1.address))
+      .to.be.ok;
+    });
+    
+    it('getStakers()', async () => {
+      expect(await farmContract.connect(addr1).getStakers())
+      .to.be.ok;
+    });
+
+    it('getUserBalance()', async () => {
+      expect(await farmContract.connect(addr1).getUserBalance(addr1.address))
+      .to.be.ok;
+    });    
+
+    it('getCrownYield()', async () => {
+      expect(await farmContract.connect(addr1).getCrownYield(addr1.address))
+      .to.be.ok;
+    });
+
+    it('getSecondsPerToken()', async () => {
+      expect(await farmContract.connect(addr1).getSecondsPerToken)
+      .to.be.ok;
+    });
+
+    it('getSecondsPerToken()', async () => {
+      expect(await farmContract.connect(addr1).isUserStaking(owner.address))
+      .to.be.false;
+    });    
+
+    // PRIVATE: removeAddress
+    // PRIVATE: updateYield
   });
 
   describe('Check Farm Balance', () => {
     it('Initial value is 0', async () => {
+      // CHECK: Initial balance
       const balance = await tokenContract.balanceOf(farmContract.address);
       expect(utils.formatEther(balance)).to.equal('0.0');
     });
   });
 
+  describe('stake()', () => {    
+    it('Revert: Cannot Stake 0 tokens', async () => {
+      // ACTION: Define Amounts
+      stakeAmount=ethers.utils.parseEther('0');
+      // CHECK: Reverts
+      await expect(farmContract.stake(stakeAmount))
+        .to.be.revertedWith("You cannot stake zero tokens.");
+    });
 
-  describe('Check Stake Method', () => {    
+    it('Revert: Insuffcient Balance', async () => {
+      // ACTION: Define Amounts
+      stakeAmount=ethers.utils.parseEther('100');
+      greaterThanBalance=ethers.utils.parseEther('101');
+      await tokenContract.transfer(addr1.address, stakeAmount);
+      greaterThanBalance=ethers.utils.parseEther('101');
+      await tokenContract.connect(addr1)
+        .approve(farmContract.address, greaterThanBalance);
+      // CHECK: Reverts
+      await expect(farmContract.connect(addr1).stake(greaterThanBalance))
+        .to.be.revertedWith('ERC20: transfer amount exceeds balance');
+    });    
+
+    it('Stake Emit Event', async () => {
+      stakeAmount=ethers.utils.parseEther('100');
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await expect(farmContract.stake(stakeAmount))
+        .to.emit(farmContract, 'Stake')
+        .withArgs(owner.address, stakeAmount);
+    });
+
     it('1 Staker Deposit', async () => {
+      // ACTION: Define Amounts
       stakeAmount=ethers.utils.parseEther('50');
+      // ACTION: Stake tokens
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
+      // CHECK: Staker is staking
+      const isStaking =  await farmContract.isUserStaking(owner.address);
+      expect(isStaking).to.equal(true);
+      // CHECK: Staker balance
       const stakerBalance =  await farmContract.getUserBalance(owner.address);
       expect(stakerBalance).to.equal(stakeAmount);
+      // CHECK: Farm balance (totalStaked)
+      const farmBalance = await farmContract.totalStaked();
+      expect(farmBalance).to.equal(stakeAmount);
+      // CHECK: Active staker array
+      var stakers = await farmContract.getStakers();
+      expect(stakers[0]).to.equal(owner.address);
+      expect(stakers.length).to.equal(1);
     });
 
     it('2 Staker Deposit', async () => {
+      // ACTION: Define Amounts
       staker1Amount=ethers.utils.parseEther('50');
       staker2Amount=ethers.utils.parseEther('150');
       stakedTotal= ethers.utils.parseEther('200');
       tokenContract.transfer(addr1.address, staker2Amount);
-
+      // ACTION: Stake tokens
       await tokenContract.approve(farmContract.address, staker1Amount);
       await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
       await farmContract.stake(staker1Amount);
       await farmContract.connect(addr1).stake(staker2Amount);
-
+      // CHECK: Staker balance
       const staker1Balance =  await farmContract.getUserBalance(owner.address); 
       const staker2Balance =  await farmContract.getUserBalance(addr1.address);
-
+      const farmBalance = await farmContract.totalStaked();
       expect(staker1Balance).to.equal(staker1Amount);
       expect(staker2Balance).to.equal(staker2Amount);
-      expect(staker1Balance.add(staker2Balance)).to.equal(stakedTotal);
+      expect(staker1Balance.add(staker2Balance)).to.equal(farmBalance);
     });
-  });
-  
+  });  
 
-  describe('Check Yield', () => {    
+  describe('unstake()', () => {
+    it('Unstake Emit Event', async () => {
+      stakeAmount=ethers.utils.parseEther('100');
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount); 
+      await expect(farmContract.unstake(stakeAmount))
+        .to.emit(farmContract, 'Unstake')
+        .withArgs(owner.address, stakeAmount);
+    });
+
+    it('Revert: Cannot unstake 0 tokens', async () => {
+      // ACTION: Define Amounts
+      stakeAmount=ethers.utils.parseEther('0');
+      // CHECK: Reverts
+      await expect(farmContract.unstake(stakeAmount))
+        .to.be.revertedWith("You cannot unstake zero tokens.");
+    });
+
+    it('Revert: Cannot unstake if not staking', async () => {
+      // ACTION: Define Amounts
+      stakeAmount=ethers.utils.parseEther('1');
+      // CHECK: Reverts
+      await expect(farmContract.unstake(stakeAmount))
+        .to.be.revertedWith("Requested withdraw greater than staking balance.");
+    });
+
+    it('Revert: Cannot unstake more than staking', async () => {
+      // ACTION: Define Amounts
+      stakeAmount=ethers.utils.parseEther('100');
+      greaterThanStakeAmount = stakeAmount.add(1);
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);      
+      // CHECK: Reverts
+      await expect(farmContract.unstake(greaterThanStakeAmount))
+        .to.be.revertedWith("Requested withdraw greater than staking balance.");
+    });      
+
+    it('1 Staker Unstakes', async () => {
+      // ACTION: Initialize case
+      stakeAmount=ethers.utils.parseEther('50');
+      // ACTION: Stake tokens then unstake
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      await farmContract.unstake(stakeAmount);      
+      // CHECK: Staker is not staking
+      const isStaking =  await farmContract.isUserStaking(owner.address);
+      expect(isStaking).to.equal(false);
+      // CHECK: Staker balance
+      const stakerBalance =  await farmContract.getUserBalance(owner.address);
+      expect(stakerBalance).to.equal(0);
+      // CHECK: Farm balance (totalStaked)
+      const farmBalance = await farmContract.totalStaked();
+      expect(farmBalance).to.equal(0);
+      // CHECK: Active staker array
+      var stakers = await farmContract.getStakers();
+      expect(stakers[0]).to.equal();
+      expect(stakers.length).to.equal(0);
+    });
+
+    it('2 Stakers. 1 Unstakes.', async () => {
+      // ACTION: Initialize Case
+      staker1Amount=ethers.utils.parseEther('50');
+      staker2Amount=ethers.utils.parseEther('75');
+      stakedTotal= staker1Amount.add(staker2Amount)
+      tokenContract.transfer(addr1.address, staker2Amount);
+      // ACTION: Approve and stake
+      await tokenContract.approve(farmContract.address, staker1Amount);
+      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+      await farmContract.stake(staker1Amount);
+      await farmContract.connect(addr1).stake(staker2Amount);
+      // ACTION: Unstake
+      await farmContract.unstake(stakeAmount);      
+      // CHECK: Staker is not staking
+      const isStaking1 =  await farmContract.isUserStaking(owner.address);
+      const isStaking2 =  await farmContract.isUserStaking(addr1.address);
+      expect(isStaking1).to.equal(false);
+      expect(isStaking2).to.equal(true);
+      // CHECK: Staker balance
+      const staker1Balance =  await farmContract.getUserBalance(owner.address);
+      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
+      expect(staker1Balance).to.equal(0);
+      expect(staker2Balance).to.equal(staker2Amount);
+      // CHECK: Farm balance (totalStaked)
+      const farmBalance = await farmContract.totalStaked();
+      expect(farmBalance).to.equal(staker2Amount);
+      // CHECK: Active staker array
+      var stakers = await farmContract.getStakers();
+      expect(stakers[0]).to.equal(addr1.address);
+      expect(stakers.length).to.equal(1);
+    });
+
+
+    it('3 Stakers. 1 Unstakes all. 2 Unstakes some', async () => {
+      // ACTION: Initialize Case
+      staker1Amount=ethers.utils.parseEther('50');
+      staker2Amount=ethers.utils.parseEther('75');
+      staker3Amount=ethers.utils.parseEther('100');
+      staker2UnstakeAmount=ethers.utils.parseEther('40');
+      stakedTotal= staker1Amount.add(staker2Amount).add(staker3Amount);
+      tokenContract.transfer(addr1.address, staker2Amount);
+      tokenContract.transfer(addr2.address, staker3Amount);
+      // ACTION: Approve and stake
+      await tokenContract.approve(farmContract.address, staker1Amount);
+      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+      await tokenContract.connect(addr2).approve(farmContract.address, staker3Amount);
+      await farmContract.stake(staker1Amount);
+      await farmContract.connect(addr1).stake(staker2Amount);
+      await farmContract.connect(addr2).stake(staker3Amount);
+      // ACTION: Unstake
+      await farmContract.unstake(staker1Amount);
+      await farmContract.connect(addr1).unstake(staker2UnstakeAmount);
+      // CHECK: Active stakers
+      const isStaking1 =  await farmContract.isUserStaking(owner.address);
+      const isStaking2 =  await farmContract.isUserStaking(addr1.address);
+      const isStaking3 =  await farmContract.isUserStaking(addr2.address);
+      expect(isStaking1).to.equal(false);
+      expect(isStaking2).to.equal(true);
+      expect(isStaking3).to.equal(true);
+      // CHECK: Staker balance
+      const staker1Balance =  await farmContract.getUserBalance(owner.address);
+      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
+      const staker3Balance =  await farmContract.getUserBalance(addr2.address);
+      expect(staker1Balance).to.equal(0);
+      expect(staker2Balance).to.equal(staker2Amount.sub(staker2UnstakeAmount));
+      expect(staker3Balance).to.equal(staker3Amount);
+      // CHECK: Farm balance (totalStaked)
+      const farmBalance = await farmContract.totalStaked();
+      expect(farmBalance)
+        .to.equal(staker2Amount.sub(staker2UnstakeAmount).add(staker3Amount));
+      // CHECK: Active staker array
+      var stakers = await farmContract.getStakers();
+      expect(stakers[0]).to.equal(addr2.address);
+      expect(stakers[1]).to.equal(addr1.address);
+      expect(stakers.length).to.equal(2);
+    });
+
+    it('3 Stakers. All Unstake', async () => {
+      // ACTION: Initialize Case
+      staker1Amount=ethers.utils.parseEther('50');
+      staker2Amount=ethers.utils.parseEther('75');
+      staker3Amount=ethers.utils.parseEther('100');
+      stakedTotal= staker1Amount.add(staker2Amount).add(staker3Amount);
+      tokenContract.transfer(addr1.address, staker2Amount);
+      tokenContract.transfer(addr2.address, staker3Amount);
+      // ACTION: Approve and stake
+      await tokenContract.approve(farmContract.address, staker1Amount);
+      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+      await tokenContract.connect(addr2).approve(farmContract.address, staker3Amount);
+      await farmContract.stake(staker1Amount);
+      await farmContract.connect(addr1).stake(staker2Amount);
+      await farmContract.connect(addr2).stake(staker3Amount);
+      // ACTION: Unstake
+      await farmContract.unstake(staker1Amount);
+      await farmContract.connect(addr1).unstake(staker2Amount);
+      await farmContract.connect(addr2).unstake(staker3Amount);
+      // CHECK: Active stakers
+      const isStaking1 =  await farmContract.isUserStaking(owner.address);
+      const isStaking2 =  await farmContract.isUserStaking(addr1.address);
+      const isStaking3 =  await farmContract.isUserStaking(addr2.address);
+      expect(isStaking1).to.equal(false);
+      expect(isStaking2).to.equal(false);
+      expect(isStaking3).to.equal(false);
+      // CHECK: Staker balance
+      const staker1Balance =  await farmContract.getUserBalance(owner.address);
+      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
+      const staker3Balance =  await farmContract.getUserBalance(addr2.address);
+      expect(staker1Balance).to.equal(0);
+      expect(staker2Balance).to.equal(0);
+      expect(staker3Balance).to.equal(0);
+      // CHECK: Farm balance (totalStaked)
+      const farmBalance = await farmContract.totalStaked();
+      expect(farmBalance).to.equal(0);
+      // CHECK: Active staker array
+      var stakers = await farmContract.getStakers();
+      expect(stakers.length).to.equal(0);
+    });    
+  }); 
+
+  describe('Yield: calculateUserTotalYield() and crownYield()', () => {    
+    it('Not staking Total Yield', async () => {
+      // CHECK: Non-staker Yield
+      const yield = await farmContract.calculateUserTotalYield(owner.address);
+      expect(yield).to.equal(0);
+    });
+
+    it('Not staking Crown Yield', async () => {
+      // CHECK: Non-staker Yield
+      const yield = await farmContract.getCrownYield(owner.address);
+      expect(yield).to.equal(0);
+    });
+
     it('1 Staker Yield', async () => {
-      // SET CASE PARAMETERS
+      // ACTION: Intialize case
       stakeAmount=ethers.utils.parseEther('50');
       const tokensPerSecond = await vaultContract.tokensPerSecond();
       const expectedEmissions = utils.formatEther(tokensPerSecond);
-      // APPROVE, STAKE, UPDATE YIELD
+      // ACTION: Approve and stake
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
-      await farmContract.updateYield();
-      // Get 1 second of Yield
-      const yield = await farmContract.getUserYield(owner.address);
+      // ACTION: Increase time
+      const seconds = 1;
+      await ethers.provider.send("evm_increaseTime", [seconds]);
+      await ethers.provider.send('evm_mine');
       // CHECK: 1 Staker Yield
+      const yield = await farmContract.calculateUserTotalYield(owner.address);
       expect(utils.formatEther(yield)).to.equal(expectedEmissions);
+    });   
+
+    it('Equals crownYield after withdraw', async () => {
+      // ACTION: Intialize case
+      stakeAmount=ethers.utils.parseEther('50');
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const expectedEmissions = utils.formatEther(tokensPerSecond);
+      // ACTION: Approve and stake
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      // ACTION: Increase time
+      const seconds = 1;
+      await ethers.provider.send("evm_increaseTime", [seconds]);
+      await ethers.provider.send('evm_mine');
+      // CHECK: Yield
+      var yield = await farmContract.calculateUserTotalYield(owner.address);
+      expect(utils.formatEther(yield)).to.equal(expectedEmissions);
+      // ACTION: Withdraw
+      await farmContract.unstake(stakeAmount);
+      var totalYield = await farmContract.calculateUserTotalYield(owner.address);
+      var crownYield = await farmContract.getCrownYield(owner.address);
+      expect(crownYield).to.equal(totalYield);
+    }); 
+
+  });
+
+  describe('withdrawYield()', () => {
+    it('Reverts: No yield to withdarw', async () => {
+      await expect(farmContract.withdrawYield())
+      .to.be.revertedWith("Nothing to withdraw");
     });
 
+    it('Emits Event', async () => {
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      stakeAmount=ethers.utils.parseEther('100');
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      await farmContract.unstake(stakeAmount);
+      await expect(farmContract.withdrawYield())
+        .to.emit(farmContract, 'YieldWithdraw')
+        .withArgs(owner.address, tokensPerSecond);
+    });
+
+    
+    it('1 Staker Final Balance', async () => {
+      // ACTION: Intialize case
+      initialBalance  = await tokenContract.balanceOf(owner.address); 
+      stakeAmount=ethers.utils.parseEther('50');
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const expectedEmissions = tokensPerSecond;
+      // ACTION: Approve, stake, unstake, withdraw
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);
+      await farmContract.unstake(stakeAmount);
+      await farmContract.withdrawYield();
+      // CHECK: Balance
+      finalBalance  = await tokenContract.balanceOf(owner.address); 
+      expect(finalBalance).to.equal(initialBalance.add(expectedEmissions));
+      // Check: Yield
+      const yield = await farmContract.calculateUserTotalYield(owner.address);
+      expect(yield).to.equal(0);
+    }); 
+  });
+
+  describe('Full cycle: Stake, unstake, Claim Yield', () => {
     it('2 Staker Yield 50/50', async () => {
       /*=================================================
       This will have 2 users stake 50/50.
@@ -123,7 +502,7 @@ describe("Yield Farm", () => {
       user should expect: 
       ~2.1024 Tokens/second * (1 + 0.5)seconds ~= 3.1536 Tokens/staker
       ======================================================*/
-      // Define Amounts     
+      // ACTION: Define Amounts     
       const tokensPerSecond = await vaultContract.tokensPerSecond();
       const totalStakers=2;
       const staker1Amount=utils.parseEther('50');
@@ -133,16 +512,17 @@ describe("Yield Farm", () => {
       const staker2Percent = '0.5';
       await tokenContract.transfer(addr1.address, staker2Amount);
       const initialBalance = await tokenContract.balanceOf(owner.address);
-      // NOTE: 1.5 seconds at 2.1024 tokens/second
+      // NOTE: 1.5 seconds at 0.4756 tokens/second
       const expectedstaker1Yield=tokensPerSecond.mul(15).div(10);
       const expectedstaker2Yield=tokensPerSecond.mul(15).div(10);
       const expectedTotalYield=expectedstaker1Yield.add(expectedstaker2Yield);
-      // APPROVE TOKENS
+      // ACTION: APPROVE TOKENS
       await tokenContract.approve(farmContract.address, staker1Amount);
-      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);      
-      // STAKE
+      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+      // ACTION: STAKE
       await farmContract.stake(staker1Amount);
-      await farmContract.connect(addr1).stake(staker2Amount);     
+      var staker1StartTime = await farmContract.startTime();
+      await farmContract.connect(addr1).stake(staker2Amount);
       // CHECK: Staked Balance
       let staker1Balance =  await farmContract.getUserBalance(owner.address); 
       let staker2Balance =  await farmContract.getUserBalance(addr1.address);      
@@ -152,48 +532,50 @@ describe("Yield Farm", () => {
       Staker 1: 1 second at 100%
       Staker 2: 0 seconds (in passed blocktime)
       */
-      let yield1 = await farmContract.getUserYield(owner.address); 
-      let yield2 = await farmContract.getUserYield(addr1.address);        
+      let yield1 = await farmContract.calculateUserTotalYield(owner.address); 
+      let yield2 = await farmContract.calculateUserTotalYield(addr1.address);        
       expect(yield1).to.equal(tokensPerSecond);
       expect(yield2).to.equal(utils.parseEther("0"));      
       // CHECK: Staked percent
-      const totalStake = await farmContract.totalStaked()
-      expect(totalStake).to.equal(stakedTotal);      
-      const percent1 = await farmContract.userStakingPercent(owner.address, totalStake);
-      const percent2 = await farmContract.userStakingPercent(addr1.address, totalStake);
+      const totalStake = await farmContract.totalStaked();  
+      const percent1 = await farmContract.userStakingPercent(owner.address);
+      const percent2 = await farmContract.userStakingPercent(addr1.address);
       expect(utils.formatEther(percent1)).to.equal(staker1Percent);
       expect(utils.formatEther(percent2)).to.equal(staker2Percent);     
-      // UNSTAKE
+      // ACTION: UNSTAKE
       await farmContract.unstake(staker1Amount);
-      await farmContract.connect(addr1).unstake(staker2Amount);   
-      currentTime = await farmContract.getCurrentTime();   
-      farmBalance = await tokenContract.balanceOf(farmContract.address);
-      // CHECK UNSTAKE: Zero Staked Balance
+      await farmContract.connect(addr1).unstake(staker2Amount);
+      var staker2UnstakeTime = await getCurrentTime();
+      var totalTimeStaking = staker2UnstakeTime.sub(staker1StartTime);
+      // CHECK: Total emissions generated sent to farm
+      // TODO: add a percentage check
+      var farmBalance = await tokenContract.balanceOf(farmContract.address);     
+      const vaultStartTime = await vaultContract.vaultStartTime();      
+      var currentTime = await getCurrentTime();
+      var totalTimePassed = currentTime.sub(vaultStartTime);
+      expect(farmBalance).to.be.closeTo(totalTimePassed.mul(tokensPerSecond), tolerance);
+      // CHECK: Zero Staked Balance after unstake
       staker1Balance =  await farmContract.getUserBalance(owner.address); 
       staker2Balance =  await farmContract.getUserBalance(addr1.address);
       expect(staker1Balance).to.equal(utils.parseEther('0'));
       expect(staker2Balance).to.equal(utils.parseEther('0'));            
-      // CHECK: Yield 
-      yield1 = await farmContract.getUserYield(owner.address); 
-      yield2 = await farmContract.getUserYield(addr1.address);  
+      // // CHECK: Yield 
+      yield1 = await farmContract.calculateUserTotalYield(owner.address); 
+      yield2 = await farmContract.calculateUserTotalYield(addr1.address);  
       expect(yield1).to.equal(expectedstaker1Yield);
       expect(yield2).to.equal(expectedstaker2Yield);
-      expect(yield1.add(yield2)).to.be.closeTo(tokensPerSecond.mul(3),1);      
-      // WITHDRAW YIELD
+      expect(yield1.add(yield2)).to.be.closeTo(tokensPerSecond.mul(3),tolerance);      
+      // ACTION: WITHDRAW YIELD
       await farmContract.withdrawYield();
       await farmContract.connect(addr1).withdrawYield();
-      // CHECK: Total balance
+      // CHECK: Staker final balances
       const ownerBalance = await tokenContract.balanceOf(owner.address);
       const addr1Balance = await tokenContract.balanceOf(addr1.address);
       expect(ownerBalance).to.equal(initialBalance.add(expectedstaker1Yield));
       expect(addr1Balance).to.equal(staker2Amount.add(expectedstaker2Yield));
-      // FARM BALANCE
-      
-      farmStart = await farmContract.farmStartTime();
-      
-      var totalTimePassed = currentTime.sub(farmStart);
-      console.log(utils.formatEther(farmBalance));
-      console.log(totalTimePassed.toString(), "seconds");
+      // CHECK: Final farm balance      
+      const finalfarmBalance = await tokenContract.balanceOf(farmContract.address); 
+      expect(finalfarmBalance).to.be.closeTo(farmBalance.sub(yield1).sub(yield2), tolerance);
     });
 
     it('4 Staker 50 Tokens Each', async () => {
@@ -244,14 +626,14 @@ describe("Yield Farm", () => {
       await tokenContract.transfer(addr3.address, staker4Amount);
       // NOTE: Outside wallets(1,4) 2.083 seconds at 2.1024 tokens/second
       // NOTE: Inside  wallets(2,3) 1.416 seconds at 2.1024 tokens/second
-      const expectedstaker1Yield=tokensPerSecond.mul(2083).div(1000);
-      const expectedstaker2Yield=tokensPerSecond.mul(1416).div(1000);
-      const expectedstaker3Yield=tokensPerSecond.mul(1416).div(1000);
-      const expectedstaker4Yield=tokensPerSecond.mul(2083).div(1000);
+      const expectedstaker1Yield=tokensPerSecond.mul(2083333333).div(1000000000);
+      const expectedstaker2Yield=tokensPerSecond.mul(1416666667).div(1000000000);
+      const expectedstaker3Yield=tokensPerSecond.mul(1416666667).div(1000000000);
+      const expectedstaker4Yield=tokensPerSecond.mul(2083333333).div(1000000000);
       const expectedTotalYield=expectedstaker1Yield
-                               .add(expectedstaker2Yield)
-                               .add(expectedstaker3Yield)
-                               .add(expectedstaker4Yield);
+                              .add(expectedstaker2Yield)
+                              .add(expectedstaker3Yield)
+                              .add(expectedstaker4Yield);
 
       // APPROVE TOKENS TO STAKE
       await tokenContract.approve(farmContract.address, staker1Amount);
@@ -264,21 +646,21 @@ describe("Yield Farm", () => {
       await farmContract.connect(addr2).stake(staker3Amount);
       await farmContract.connect(addr3).stake(staker4Amount);
       // CHECK: Staked Balance
-      let staker1Balance =  await farmContract.getUserBalance(owner.address);
-      let staker2Balance =  await farmContract.getUserBalance(addr1.address);
-      let staker3Balance =  await farmContract.getUserBalance(addr2.address);
-      let staker4Balance =  await farmContract.getUserBalance(addr3.address);
+      let staker1Balance = await farmContract.getUserBalance(owner.address);
+      let staker2Balance = await farmContract.getUserBalance(addr1.address);
+      let staker3Balance = await farmContract.getUserBalance(addr2.address);
+      let staker4Balance = await farmContract.getUserBalance(addr3.address);
       expect(staker1Balance).to.equal(staker1Amount);
       expect(staker2Balance).to.equal(staker2Amount);
       expect(staker3Balance).to.equal(staker3Amount);
       expect(staker4Balance).to.equal(staker4Amount);    
       // CHECK: Staked percent
-      const totalStake = await farmContract.totalStaked()
+      const totalStake = await farmContract.totalStaked();
       expect(totalStake).to.equal(stakedTotal);      
-      const percent1 = await farmContract.userStakingPercent(owner.address, totalStake);
-      const percent2 = await farmContract.userStakingPercent(addr1.address, totalStake);
-      const percent3 = await farmContract.userStakingPercent(addr2.address, totalStake);
-      const percent4 = await farmContract.userStakingPercent(addr3.address, totalStake);
+      const percent1 = await farmContract.userStakingPercent(owner.address);
+      const percent2 = await farmContract.userStakingPercent(addr1.address);
+      const percent3 = await farmContract.userStakingPercent(addr2.address);
+      const percent4 = await farmContract.userStakingPercent(addr3.address);
       expect(utils.formatEther(percent1)).to.equal(staker1Percent);
       expect(utils.formatEther(percent2)).to.equal(staker2Percent);     
       expect(utils.formatEther(percent3)).to.equal(staker3Percent);  
@@ -306,110 +688,19 @@ describe("Yield Farm", () => {
         expect(results[3]).to.equal(utils.parseEther('0'));
       });
       // CHECK: Yield 
-      yield1 = await farmContract.getUserYield(owner.address); 
-      yield2 = await farmContract.getUserYield(addr1.address);  
-      yield3 = await farmContract.getUserYield(addr2.address);  
-      yield4 = await farmContract.getUserYield(addr3.address);  
-      const zeroPoint001 = utils.parseEther("0.001")
-      expect(yield1).to.be.closeTo(expectedstaker1Yield,zeroPoint001);
-      expect(yield2).to.be.closeTo(expectedstaker2Yield,zeroPoint001);
-      expect(yield3).to.be.closeTo(expectedstaker3Yield,zeroPoint001);
-      expect(yield4).to.be.closeTo(expectedstaker4Yield,zeroPoint001);
+      yield1 = await farmContract.calculateUserTotalYield(owner.address); 
+      yield2 = await farmContract.calculateUserTotalYield(addr1.address);  
+      yield3 = await farmContract.calculateUserTotalYield(addr2.address);  
+      yield4 = await farmContract.calculateUserTotalYield(addr3.address);  
+      
+      expect(yield1).to.be.closeTo(expectedstaker1Yield,tolerance);
+      expect(yield2).to.be.closeTo(expectedstaker2Yield,tolerance);
+      expect(yield3).to.be.closeTo(expectedstaker3Yield,tolerance);
+      expect(yield4).to.be.closeTo(expectedstaker4Yield,tolerance);
       expect(yield1.add(yield2).add(yield3).add(yield4)).to.
-      be.closeTo(expectedTotalYield, zeroPoint001);
+      be.closeTo(expectedTotalYield, tolerance);
 
     });
-  });
-
-describe('Check Balance', () => {        
-    it('Balance: 2 Staker Deposit', async () => {
-      staker1Amount=ethers.utils.parseEther('50');
-      staker2Amount=ethers.utils.parseEther('75');
-      stakedTotal= ethers.utils.parseEther('125');
-      tokenContract.transfer(addr1.address, staker2Amount);
-
-      await tokenContract.approve(farmContract.address, staker1Amount);
-      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
-      await farmContract.stake(staker1Amount);
-      await farmContract.connect(addr1).stake(staker2Amount);
-
-      const staker1Balance =  await farmContract.getUserBalance(owner.address); 
-      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
-
-      expect(staker1Balance).to.equal(staker1Amount);
-      expect(staker2Balance).to.equal(staker2Amount);
-      expect(staker1Balance.add(staker2Balance)).to.equal(stakedTotal);
-    });
-
-    it('Balance: 3 Staker Deposit', async () => {
-      staker1Amount=ethers.utils.parseEther('50');
-      staker2Amount=ethers.utils.parseEther('50');
-      staker3Amount=ethers.utils.parseEther('50');
-      stakedTotal= ethers.utils.parseEther('150');
-      tokenContract.transfer(addr1.address, staker2Amount);
-      tokenContract.transfer(addr2.address, staker3Amount);
-
-      await tokenContract.approve(farmContract.address, staker1Amount);
-      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
-      await tokenContract.connect(addr2).approve(farmContract.address, staker3Amount);
-      await farmContract.stake(staker1Amount);
-      await farmContract.connect(addr1).stake(staker2Amount);
-      await farmContract.connect(addr2).stake(staker3Amount);
-
-      const staker1Balance =  await farmContract.getUserBalance(owner.address); 
-      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
-      const staker3Balance =  await farmContract.getUserBalance(addr2.address);
-
-      expect(staker1Balance).to.equal(staker1Amount);
-      expect(staker2Balance).to.equal(staker2Amount);
-      expect(staker3Balance).to.equal(staker3Amount);
-      expect(staker1Balance
-             .add(staker2Balance)
-             .add(staker3Balance))
-             .to.equal(stakedTotal);
-    });
-
-    it('Balance: 2 Stakers Deposit, 1 unstakes all', async () => {
-      staker1Amount=utils.parseEther('50');
-      staker2Amount=utils.parseEther('75');
-      stakedTotal= utils.parseEther('125');
-      tokenContract.transfer(addr1.address, staker2Amount);
-
-      await tokenContract.approve(farmContract.address, staker1Amount);
-      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
-      await farmContract.stake(staker1Amount);
-      await farmContract.connect(addr1).stake(staker2Amount);
-
-      //const staker1Balance =  await farmContract.getUserBalance(owner.address); 
-      const staker2Balance =  await farmContract.getUserBalance(addr1.address);
-
-      await farmContract.unstake(staker1Amount);
-      const staker1Balance =  await farmContract.getUserBalance(owner.address); 
-
-      expect(staker1Balance).to.equal(utils.parseEther('0'));
-      expect(staker2Balance).to.equal(staker2Amount);
-      expect(staker1Balance.add(staker2Balance)).to.equal(staker2Balance);
-    });
-
-
-    it('Balance: 2 Stakers Deposit, 1 unstakes all, then overdraws', async () => {
-      staker1Amount=utils.parseEther('50');
-      staker2Amount=utils.parseEther('75');
-      stakedTotal= utils.parseEther('125');
-      tokenContract.transfer(addr1.address, staker2Amount);
-
-      await tokenContract.approve(farmContract.address, staker1Amount);
-      await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
-      await farmContract.stake(staker1Amount);
-      await farmContract.connect(addr1).stake(staker2Amount);
-      await farmContract.unstake(staker1Amount);
-      const staker1Balance =  await farmContract.getUserBalance(owner.address); 
-
-      await expect(farmContract.unstake(staker1Amount))
-        .to.be.revertedWith("Nothing to unstake");
-
-    });
-
   });
 
 });
