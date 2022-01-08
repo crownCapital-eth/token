@@ -1,6 +1,6 @@
 # Crown Capital Web3
 
-This repo contains the Crown Capital token and yield farm contracts and front end. 
+This repo contains the Crown Capital contracts and front end. 
 The contracts will be deployed on the Arbitrum network. There are three contracts
   1. CrownToken.sol
   2. Vault.sol
