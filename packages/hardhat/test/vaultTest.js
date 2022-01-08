@@ -21,7 +21,7 @@ describe("Vault", () => {
 
   let tokenContract;
   let vaultContract;
-  let FarmContract;
+  let farmContract;
 
   let vaultTokensSupply;
   let FarmTokensSupply;
@@ -105,6 +105,11 @@ describe("Vault", () => {
       expect(await vaultContract.connect(addr1).getPerFarmEmissions(addr1.address))
       .to.be.ok;
     });
+
+    it('isFarmActive()', async () => {
+        await expect(vaultContract.connect(addr1).isFarmActive(addr1.address))
+        .to.be.ok;
+      });
   });
 
   describe('Only Owner', () => {
@@ -564,5 +569,18 @@ describe("Vault", () => {
       expect(farmAddresses[0]).to.equal();
     });
   });  
+
+  describe('isFarmActive()', () => {
+    it('Check Farm Address is Active', async () => {   
+      // CHECK: Farm is active
+      const active = await vaultContract.isFarmActive(farmContract.address);
+      expect(active).to.equal(true);
+    });
+    it('Check Farm Address is not Active', async () => {   
+        // CHECK: Address is not active
+        const active = await vaultContract.isFarmActive(owner.address);
+        expect(active).to.equal(false);
+      });
+  });   
 
 });

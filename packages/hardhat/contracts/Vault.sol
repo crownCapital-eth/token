@@ -165,11 +165,30 @@ contract Vault is Ownable {
   }
 
   function getActiveFarmPercents(address farmAddr) public view returns(uint256) {        
-    return activeFarmPercents[farmAddr];
+    uint256 percent = 0;
+    if(isFarmActive(farmAddr)){
+      percent = activeFarmPercents[farmAddr];
+    }      
+    return percent;
   }
 
   function getPerFarmEmissions(address farmAddr) public view returns(uint256) {        
     return perFarmEmissions[farmAddr];
+  }
+
+  function isFarmActive(address farmAddr) public view returns(bool) {
+    address addr;
+    bool isActive = false;
+
+    for (
+      uint256 idx = 0; 
+      idx < activeFarmTokens.length; 
+      idx++
+      ) {
+        addr = activeFarmTokens[idx];
+        if(addr == farmAddr){isActive=true;}
+      }
+    return isActive;
   }
 
 }
