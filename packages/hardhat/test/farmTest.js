@@ -103,7 +103,7 @@ describe("Yield Farm", () => {
     });
 
     it('calculateYieldTime()', async () => {
-      expect(await farmContract.connect(addr1).calculateYieldTime(addr1.address))
+      expect(await farmContract.connect(addr1).calculateYieldTime())
       .to.be.ok;
     });
     

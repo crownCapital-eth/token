@@ -28,7 +28,7 @@ contract Vault is Ownable {
   event UpdateEmissions(uint256 emiss);
 
   CrownToken crownToken;
-  constructor(address tokenAddress) public {
+  constructor(address tokenAddress) {
     crownToken = CrownToken(tokenAddress);
     vaultStartTime=block.timestamp;
     lastEmissionsTime=block.timestamp;

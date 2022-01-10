@@ -27,7 +27,7 @@ contract Farm is Ownable {
 
   Vault vault;
   CrownToken crownToken;
-  constructor(address tokenAddress, address vaultAddress) public {
+  constructor(address tokenAddress, address vaultAddress) {
     crownToken = CrownToken(tokenAddress);
     crownAddress=tokenAddress;
     vault = Vault(vaultAddress);
@@ -139,9 +139,8 @@ contract Farm is Ownable {
   }
 
   function calculateUserTotalYield(address staker) public view returns(uint256) {
-      uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
+      uint256 secondsPassed = calculateYieldTime() * 10**18;
       uint256 stakingPercent = userStakingPercent(staker);
-      uint256 farmPercent = vault.getActiveFarmPercents(address(this));
       uint256 farmSecondsPerToken = vault.getFarmSecondsPerToken(address(this));
       uint256 newYield = (stakingPercent * secondsPassed) / (farmSecondsPerToken);
       uint256 totalYield = crownYield[staker] + newYield;
@@ -157,7 +156,7 @@ contract Farm is Ownable {
   }
 
 
-  function calculateYieldTime(address staker) public view returns(uint256){
+  function calculateYieldTime() public view returns(uint256){
       uint256 totalTime = 0;
       uint256 end = block.timestamp;
       totalTime = end - startTime;

@@ -29,7 +29,7 @@ contract mockLPFarm is Ownable {
   Vault vault;
   MockSushiLP sushiToken;
   CrownToken crownToken;
-  constructor(address stakeToken, address rewardsToken, address vaultAddress) public {
+  constructor(address stakeToken, address rewardsToken, address vaultAddress) {
     sushiToken = MockSushiLP(stakeToken);
     sushiAddress=stakeToken;
     crownToken = CrownToken(rewardsToken);
@@ -142,12 +142,10 @@ contract mockLPFarm is Ownable {
   }
 
   function calculateUserTotalYield(address staker) public view returns(uint256) {
-      uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
+      uint256 secondsPassed = calculateYieldTime() * 10**18;
       uint256 stakingPercent = userStakingPercent(staker);
-      uint256 farmPercent = vault.getActiveFarmPercents(address(this));
       uint256 farmSecondsPerToken = vault.getFarmSecondsPerToken(address(this));
-      uint256 newYield = (stakingPercent * secondsPassed) 
-        / (farmSecondsPerToken);
+      uint256 newYield = (stakingPercent * secondsPassed) / (farmSecondsPerToken);
       uint256 totalYield = crownYield[staker] + newYield;
       return totalYield;
   } 
@@ -161,7 +159,7 @@ contract mockLPFarm is Ownable {
   }
 
 
-  function calculateYieldTime(address staker) public view returns(uint256){
+  function calculateYieldTime() public view returns(uint256){
       uint256 totalTime = 0;
       uint256 end = block.timestamp;
       totalTime = end - startTime;
