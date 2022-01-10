@@ -2,20 +2,21 @@ pragma solidity 0.8.4;
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./mockSushiLPToken.sol";
 import "./CrownToken.sol";
 import "./Vault.sol";
 
-contract Farm is Ownable {
+contract mockLPFarm is Ownable {
 
-  string public name = "Crown Capital Farm";
+  string public name = "CROWN/USDC Sushi LP Farm";
   
   address[] public stakers;
+  address public sushiAddress;
   address public crownAddress;
 
   uint256 public startTime;
   uint256 public totalStaked;
   uint256 public farmStartTime;
-  uint256 public percentOfEmssions;  
 
   mapping(address => bool) public isStaking;
   mapping(address => uint256) public crownYield; // Yield to Claim
@@ -26,14 +27,16 @@ contract Farm is Ownable {
   event YieldWithdraw(address indexed to, uint256 amount);
 
   Vault vault;
+  MockSushiLP sushiToken;
   CrownToken crownToken;
-  constructor(address tokenAddress, address vaultAddress) {
-    crownToken = CrownToken(tokenAddress);
-    crownAddress=tokenAddress;
+  constructor(address stakeToken, address rewardsToken, address vaultAddress) {
+    sushiToken = MockSushiLP(stakeToken);
+    sushiAddress=stakeToken;
+    crownToken = CrownToken(rewardsToken);
+    crownAddress=rewardsToken;    
     vault = Vault(vaultAddress);
-    percentOfEmssions=0;
     farmStartTime = block.timestamp;
-    totalStaked=0;
+    totalStaked=0;    
   }
 
   //TODO: ADD switch for canStake, canWithdraw, 
@@ -44,7 +47,7 @@ contract Farm is Ownable {
       "You cannot stake zero tokens.");
     updateYield();  
 
-    (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
+    (bool sent) = sushiToken.transferFrom(msg.sender, address(this), amountToStake);
     require(sent, "Failed to transfer tokens from user to Farm");
           
     if(stakingBalance[msg.sender] == 0){
@@ -75,7 +78,7 @@ contract Farm is Ownable {
     stakingBalance[msg.sender] -= balTransfer;
     totalStaked-= balTransfer;
     
-    (bool sent) = crownToken.transfer(msg.sender, balTransfer);
+    (bool sent) = sushiToken.transfer(msg.sender, balTransfer);
     require(sent, "Failed to withdraw Tokens"); 
 
     if(stakingBalance[msg.sender] == 0){
@@ -90,7 +93,7 @@ contract Farm is Ownable {
           stakersIndex++
           ) {
               if(msg.sender == stakers[stakersIndex]){
-                removeAddress(stakersIndex);
+                  removeAddress(stakersIndex);
               }
             }
       }
@@ -123,7 +126,7 @@ contract Farm is Ownable {
     emit YieldWithdraw(msg.sender, toTransfer);
   }
 
-  function updateYield() private {
+ function updateYield() private {
     vault.sendToFarm();
     for (
       uint256 stakersIndex = 0;
