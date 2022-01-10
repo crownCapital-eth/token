@@ -15,7 +15,6 @@ contract Farm is Ownable {
   uint256 public startTime;
   uint256 public totalStaked;
   uint256 public farmStartTime;
-  uint256 public secondsPerToken;
   uint256 public percentOfEmssions;  
 
   mapping(address => bool) public isStaking;
@@ -32,10 +31,9 @@ contract Farm is Ownable {
     crownToken = CrownToken(tokenAddress);
     crownAddress=tokenAddress;
     vault = Vault(vaultAddress);
-    secondsPerToken = vault.secondsPerToken();
     percentOfEmssions=0;
     farmStartTime = block.timestamp;
-    totalStaked=0;    
+    totalStaked=0;
   }
 
   //TODO: ADD switch for canStake, canWithdraw, 
@@ -92,7 +90,7 @@ contract Farm is Ownable {
           stakersIndex++
           ) {
               if(msg.sender == stakers[stakersIndex]){
-                  removeAddress(stakersIndex);
+                removeAddress(stakersIndex);
               }
             }
       }
@@ -144,8 +142,9 @@ contract Farm is Ownable {
       uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
       uint256 stakingPercent = userStakingPercent(staker);
       uint256 farmPercent = vault.getActiveFarmPercents(address(this));
+      uint256 farmSecondsPerToken = vault.getFarmSecondsPerToken(address(this));
       uint256 newYield = (stakingPercent * secondsPassed) 
-        / ((farmPercent * secondsPerToken)/100);
+        / (farmSecondsPerToken);
       uint256 totalYield = crownYield[staker] + newYield;
       return totalYield;
   } 
@@ -187,14 +186,5 @@ contract Farm is Ownable {
   function getCrownYield(address staker) public view returns(uint256) {
     return crownYield[staker];
   }
-
-  function getSecondsPerToken() public view returns(uint256) {
-    return secondsPerToken;
-  }
-  
-  // //TODO: MAKE PRIVATE
-  // function updateFarmPercent(address farmAddr) public view returns(uint256) {
-  //   return vault.getActiveFarmPercents(farmAddr);
-  // }
 
 }

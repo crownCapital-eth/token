@@ -25,8 +25,6 @@ describe("Yield Farm", () => {
   let FarmContract;
 
   let vaultTokensSupply;
-  let FarmTokensSupply;
-  let tokensPerEth;
   const tolerance = utils.parseEther("0.0001")
 
   beforeEach(async () => {
@@ -122,17 +120,7 @@ describe("Yield Farm", () => {
     it('getCrownYield()', async () => {
       expect(await farmContract.connect(addr1).getCrownYield(addr1.address))
       .to.be.ok;
-    });
-
-    it('getSecondsPerToken()', async () => {
-      expect(await farmContract.connect(addr1).getSecondsPerToken)
-      .to.be.ok;
-    });
-
-    it('getSecondsPerToken()', async () => {
-      expect(await farmContract.connect(addr1).isUserStaking(owner.address))
-      .to.be.false;
-    });    
+    }); 
 
     // PRIVATE: removeAddress
     // PRIVATE: updateYield
