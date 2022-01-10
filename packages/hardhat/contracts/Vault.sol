@@ -172,7 +172,6 @@ contract Vault is Ownable {
     return percent;
   }
 
-<<<<<<< HEAD
   function getFarmSecondsPerToken(address farmAddr) public view returns(uint256) {
     uint256 farmSecondsPerToken = 0;
     if(isFarmActive(farmAddr)){
@@ -182,8 +181,6 @@ contract Vault is Ownable {
     return farmSecondsPerToken;
   }
 
-=======
->>>>>>> 78394a34f3d01ff382581aa6b5981e9861bdc20c
   function getPerFarmEmissions(address farmAddr) public view returns(uint256) {        
     return perFarmEmissions[farmAddr];
   }
