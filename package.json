@@ -21,6 +21,7 @@
     "balance": "yarn workspace @crown-capital-staking/hardhat balance",
     "verify": "yarn workspace @crown-capital-staking/hardhat verify",
     "send": "yarn workspace @crown-capital-staking/hardhat send",
+    "surge": "yarn workspace @scaffold-eth/react-app surge",
     "ship": "yarn workspace @crown-capital-staking/react-app ship",
     "generate": "yarn workspace @crown-capital-staking/hardhat generate",
     "account": "yarn workspace @crown-capital-staking/hardhat account",
