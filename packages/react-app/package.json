@@ -70,7 +70,8 @@
     "gulp-postcss": "^9.0.0",
     "ipfs-http-client": "^45.0.0",
     "less-plugin-npm-import": "^2.1.0",
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "surge": "^0.21.5"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -81,6 +82,8 @@
     "prestart": "node ./scripts/create_contracts.js",
     "start": "react-scripts start",
     "test": "react-scripts test",
+    "surge": "cp build/index.html build/200.html && surge ./build",
+    "ship": "yarn surge",
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./src/**/*",
     "theme": "npx gulp less",
     "watch": "node ./scripts/watch.js",
