@@ -1,6 +1,6 @@
-import { utils, ethers } from "ethers";
-import { Button, Input, Form, Select, InputNumber, Table, Radio } from "antd";
-import React, { useState, useEffect } from "react";
+import { ethers, utils } from "ethers";
+import { Button, Form, Input, InputNumber, Radio, Select, Table } from "antd";
+import React, { useEffect, useState } from "react";
 import { useContractLoader, useOnBlock } from "eth-hooks";
 import { NETWORKS } from "../constants";
 import { Transactor } from "../helpers";
@@ -18,10 +18,6 @@ export default function L2ArbitrumBridge({ address, userSigner }) {
       test: { L1: NETWORKS.rinkeby, L2: NETWORKS.rinkebyArbitrum },
       main: { L1: NETWORKS.mainnet, L2: NETWORKS.arbitrum },
       local: { L1: NETWORKS.localArbitrumL1, L2: NETWORKS.localArbitrum },
-    },
-    optimism: {
-      test: { L1: NETWORKS.kovan, L2: NETWORKS.kovanOptimism },
-      local: { L1: NETWORKS.localOptimismL1, L2: NETWORKS.localOptimism },
     },
   };
 
@@ -41,6 +37,7 @@ export default function L2ArbitrumBridge({ address, userSigner }) {
       setL1EthBalance("...");
       setL2EthBalance("...");
     }
+
     setProviders();
   }, [rollup]);
 
