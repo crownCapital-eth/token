@@ -1,6 +1,6 @@
 import Portis from "@portis/web3";
 import WalletConnectProvider from "@walletconnect/web3-provider";
-import { Alert, Button, Card, Divider, Input, List, Menu } from "antd";
+import { Alert, Button, Card, Divider, Input, List, Menu, Row, Col, Space } from "antd";
 import "antd/dist/antd.css";
 import Authereum from "authereum";
 import {
@@ -39,8 +39,8 @@ const scaffoldEthProvider = navigator.onLine
   : null;
 const poktMainnetProvider = navigator.onLine
   ? new ethers.providers.StaticJsonRpcProvider(
-    "https://eth-mainnet.gateway.pokt.network/v1/lb/611156b4a585a20035148406",
-  )
+      "https://eth-mainnet.gateway.pokt.network/v1/lb/611156b4a585a20035148406",
+    )
   : null;
 const mainnetInfura = navigator.onLine
   ? new ethers.providers.StaticJsonRpcProvider("https://mainnet.infura.io/v3/" + INFURA_ID)
@@ -117,8 +117,8 @@ function App(props) {
     poktMainnetProvider && poktMainnetProvider._isProvider
       ? poktMainnetProvider
       : scaffoldEthProvider && scaffoldEthProvider._network
-        ? scaffoldEthProvider
-        : mainnetInfura;
+      ? scaffoldEthProvider
+      : mainnetInfura;
 
   const [injectedProvider, setInjectedProvider] = useState();
   const [address, setAddress] = useState();
@@ -377,47 +377,112 @@ function App(props) {
   const [buying, setBuying] = useState();
   const [claiming, setClaiming] = useState();
 
-  let transferDisplay = "";
-  if (CrownTokenBalance) {
-    transferDisplay = (
-      <div style={{ padding: 8, marginTop: 32, width: 420, margin: "auto" }}>
-        <Card title="Transfer Tokens">
-          <div>
-            <div style={{ padding: 8 }}>
-              <AddressInput
-                ensProvider={mainnetProvider}
-                placeholder="to address"
-                value={tokenSendToAddress}
-                onChange={setTokenSendToAddress}
-              />
-            </div>
-            <div style={{ padding: 8 }}>
-              <Input
-                style={{ textAlign: "center" }}
-                placeholder={"amount of tokens to send"}
-                value={tokenSendAmount}
-                onChange={e => {
-                  setTokenSendAmount(e.target.value);
-                }}
-              />
-            </div>
-          </div>
-          <div style={{ padding: 8 }}>
-            <Button
-              type={"primary"}
-              onClick={() => {
-                tx(
-                  writeContracts.CrownToken.transfer(tokenSendToAddress, ethers.utils.parseEther("" + tokenSendAmount)),
-                );
-              }}
-            >
-              Send Tokens
-            </Button>
-          </div>
-        </Card>
+  const tabList = [
+    {
+      key: "stake",
+      tab: "Stake",
+    },
+    {
+      key: "unstake",
+      tab: "Unstake",
+    },
+  ];
+
+  const contentList = {
+    stake: (
+      <div>
+        <div style={{ padding: 8 }}>
+          <Input
+            style={{ textAlign: "center" }}
+            placeholder={"number of tokens to stake"}
+            value={amountToStake}
+            onChange={e => {
+              setAmountToStake(e.target.value);
+            }}
+          />
+        </div>
+        <div style={{ padding: 8 }}>
+          <Button
+            type={"primary"}
+            loading={buying}
+            onClick={async () => {
+              setBuying(true);
+              await tx(
+                writeContracts.CrownToken.approve(
+                  readContracts.Farm.address,
+                  amountToStake && ethers.utils.parseEther(amountToStake),
+                ),
+              );
+              setBuying(false);
+            }}
+          >
+            Approve Tokens
+          </Button>
+        </div>
+
+        <div style={{ padding: 8 }}>
+          <Button
+            type={"primary"}
+            loading={buying}
+            onClick={async () => {
+              setBuying(true);
+              await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
+              setBuying(false);
+            }}
+          >
+            Stake Tokens
+          </Button>
+        </div>
       </div>
+    ),
+    unstake: (
+      <div>
+        <div style={{ padding: 8 }}>
+          <Input
+            style={{ textAlign: "center" }}
+            placeholder={"amount of tokens to unstake"}
+            value={amountToUnstake}
+            onChange={e => {
+              setAmountToUnstake(e.target.value);
+            }}
+          />
+        </div>
+        <div style={{ padding: 8 }}>
+          <Button
+            type={"primary"}
+            loading={buying}
+            onClick={async () => {
+              setBuying(true);
+              await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
+              setBuying(false);
+            }}
+          >
+            Stop Staking
+          </Button>
+        </div>
+      </div>
+    ),
+  };
+
+  const StakeCard = () => {
+    const [stakeTabKey, setStakeTabKey] = useState("stake");
+    const onStakeTabChange = key => {
+      setStakeTabKey(key);
+    };
+
+    return (
+      <Card
+        title="Staking"
+        tabList={tabList}
+        activeTabKey={stakeTabKey}
+        onTabChange={key => {
+          onStakeTabChange(key);
+        }}
+      >
+        {contentList[stakeTabKey]}
+      </Card>
     );
-  }
+  };
 
   return (
     <div className="App" style={{ backgroundImage: "url(" + Background + ")" }}>
@@ -449,166 +514,91 @@ function App(props) {
 
         <Switch>
           <Route exact path="/">
-            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Crown Tokens Owned" extra={<a href="#">code</a>}>
-                <div style={{ padding: 8 }}>
-                  <Balance balance={CrownTokenBalance} fontSize={64} />
-                </div>
-              </Card>
-            </div>
+            <div className="site-card-wrapper">
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Card title="Crown Tokens Owned">
+                    <div style={{ padding: 8 }}>
+                      <Balance balance={CrownTokenBalance} fontSize={64} />
+                    </div>
+                  </Card>
+                </Col>
 
-            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <div style={{ padding: 0, marginTop: 32, width: 300, margin: "auto" }}>
-                <Card title="Yield Generated" extra={<a href="#">code</a>}>
-                  <div style={{ padding: 8 }}>
-                    <Balance balance={UserYield} fontSize={64} />
-                  </div>
+                <Col span={8}>
+                  <StakeCard />
+                </Col>
 
-                  <div style={{ padding: 8 }}>
-                    <Button
-                      type={"primary"}
-                      loading={claiming}
-                      onClick={async () => {
-                        setClaiming(true);
-                        await tx(writeContracts.Farm.updateYield());
-                        setClaiming(false);
-                      }}
-                    >
-                      Update
-                    </Button>
+                <Col span={8}>
+                  <Card title="Yield Generated">
+                    <div style={{ padding: 8 }}>
+                      <Balance balance={UserYield} fontSize={64} />
+                    </div>
 
-                    <Button
-                      type={"primary"}
-                      loading={claiming}
-                      onClick={async () => {
-                        setClaiming(true);
-                        await tx(writeContracts.Farm.withdrawYield());
-                        setClaiming(false);
-                      }}
-                    >
-                      Claim
-                    </Button>
-                  </div>
-                </Card>
+                    <div style={{ padding: 8 }}>
+                      <Button
+                        type={"primary"}
+                        loading={claiming}
+                        onClick={async () => {
+                          setClaiming(true);
+                          await tx(writeContracts.Farm.updateYield());
+                          setClaiming(false);
+                        }}
+                      >
+                        Update
+                      </Button>
+
+                      <Button
+                        type={"primary"}
+                        loading={claiming}
+                        onClick={async () => {
+                          setClaiming(true);
+                          await tx(writeContracts.Farm.withdrawYield());
+                          setClaiming(false);
+                        }}
+                      >
+                        Claim
+                      </Button>
+                    </div>
+                  </Card>
+                </Col>
+              </Row>
+
+              <div style={{ padding: 8, marginTop: 32 }}>
+                <div>Farm Token Balance:</div>
+                <Balance balance={farmTokenBalance} fontSize={64} />
               </div>
-              {transferDisplay}
-              <div style={{ padding: 0, marginTop: 32, width: 300, margin: "auto" }}></div>
-            </div>
-            <Divider />
-            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Stake Tokens">
-                <div style={{ padding: 8 }}>
-                  <Input
-                    style={{ textAlign: "center" }}
-                    placeholder={"number of tokens to stake"}
-                    value={amountToStake}
-                    onChange={e => {
-                      setAmountToStake(e.target.value);
-                    }}
-                  />
-                  {/* <Balance balance={ethCostToPurchaseTokens} dollarMultiplier={price} /> */}
-                </div>
 
-                <div style={{ padding: 8 }}>
-                  <Button
-                    type={"primary"}
-                    loading={buying}
-                    onClick={async () => {
-                      setBuying(true);
-                      await tx(
-                        writeContracts.CrownToken.approve(
-                          readContracts.Farm.address,
-                          amountToStake && ethers.utils.parseEther(amountToStake),
-                        ),
-                      );
-                      setBuying(false);
-                    }}
-                  >
-                    Approve Tokens
-                  </Button>
-                </div>
+              <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
+                <div>Stake Token Events:</div>
+                <List
+                  dataSource={stakeTokenEvents}
+                  renderItem={item => {
+                    return (
+                      <List.Item key={item.blockNumber + item.blockHash}>
+                        {item.args[0]} staked
+                        <Balance balance={item.args[1]} />
+                        Tokens
+                      </List.Item>
+                    );
+                  }}
+                />
+              </div>
 
-                <div style={{ padding: 8 }}>
-                  <Button
-                    type={"primary"}
-                    loading={buying}
-                    onClick={async () => {
-                      setBuying(true);
-                      await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
-                      setBuying(false);
-                    }}
-                  >
-                    Stake Tokens
-                  </Button>
-                </div>
-              </Card>
-            </div>
-
-            <div style={{ padding: 8, marginTop: 32, width: 300, margin: "auto" }}>
-              <Card title="Unstake Tokens" extra={<a href="#">code</a>}>
-                <div style={{ padding: 8 }}>
-                  <Input
-                    style={{ textAlign: "center" }}
-                    placeholder={"amount of tokens to unstake"}
-                    value={amountToUnstake}
-                    onChange={e => {
-                      setAmountToUnstake(e.target.value);
-                    }}
-                  />
-                </div>
-                <div style={{ padding: 8 }}>
-                  <Button
-                    type={"primary"}
-                    loading={buying}
-                    onClick={async () => {
-                      setBuying(true);
-                      await tx(
-                        writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)),
-                      );
-                      setBuying(false);
-                    }}
-                  >
-                    Stop Staking
-                  </Button>
-                </div>
-              </Card>
-            </div>
-
-            <div style={{ padding: 8, marginTop: 32 }}>
-              <div>Farm Token Balance:</div>
-              <Balance balance={farmTokenBalance} fontSize={64} />
-            </div>
-
-            <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
-              <div>Stake Token Events:</div>
-              <List
-                dataSource={stakeTokenEvents}
-                renderItem={item => {
-                  return (
-                    <List.Item key={item.blockNumber + item.blockHash}>
-                      {item.args[0]} staked
-                      <Balance balance={item.args[1]} />
-                      Tokens
-                    </List.Item>
-                  );
-                }}
-              />
-            </div>
-
-            <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
-              <div>Unstake Token Events:</div>
-              <List
-                dataSource={unstakeTokenEvents}
-                renderItem={item => {
-                  return (
-                    <List.Item key={item.blockNumber + item.blockHash}>
-                      {item.args[0]} unstaked
-                      <Balance balance={item.args[1]} />
-                      Tokens
-                    </List.Item>
-                  );
-                }}
-              />
+              <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
+                <div>Unstake Token Events:</div>
+                <List
+                  dataSource={unstakeTokenEvents}
+                  renderItem={item => {
+                    return (
+                      <List.Item key={item.blockNumber + item.blockHash}>
+                        {item.args[0]} unstaked
+                        <Balance balance={item.args[1]} />
+                        Tokens
+                      </List.Item>
+                    );
+                  }}
+                />
+              </div>
             </div>
           </Route>
           <Route path="/contracts">
@@ -641,11 +631,7 @@ function App(props) {
       </BrowserRouter>
 
       <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>
-        <Account
-          web3Modal={web3Modal}
-          loadWeb3Modal={loadWeb3Modal}
-          logoutOfWeb3Modal={logoutOfWeb3Modal}
-        />
+        <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
         {faucetHint}
       </div>
     </div>
