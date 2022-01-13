@@ -5,11 +5,8 @@ const { utils } = require("ethers");
 
 export default function Balance(props) {
   const [dollarMode, setDollarMode] = useState(true);
-
   const balance = useBalance(props.provider, props.address);
-
   let floatBalance = parseFloat("0.00");
-
   let usingBalance = balance;
 
   if (typeof props.balance !== "undefined") {

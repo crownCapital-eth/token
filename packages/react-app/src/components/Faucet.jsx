@@ -35,7 +35,8 @@ export default function Faucet(props) {
               address = possibleAddress;
             }
             // eslint-disable-next-line no-empty
-          } catch (e) {}
+          } catch (e) {
+          }
         }
         setAddress(address);
       }

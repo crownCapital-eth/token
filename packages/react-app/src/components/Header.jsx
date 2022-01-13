@@ -3,7 +3,7 @@ import React from "react";
 
 export default function Header() {
   return (
-    <a href="/" /*target="_blank" rel="noopener noreferrer"*/>
+    <a href="/">
       <PageHeader
         title="Crown Capital DAO"
         subTitle="Staking"
