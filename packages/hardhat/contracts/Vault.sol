@@ -190,6 +190,7 @@ contract Vault is Ownable {
     uint256 perFarmEmission= (emissions * farmPercent)/100;
     
     return perFarmEmission;
+
   }
 
   function isFarmActive(address farmAddr) public view returns(bool) {
