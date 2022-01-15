@@ -23,12 +23,7 @@ describe("Vault", () => {
   let vaultContract;
   let farmContract;
 
-  let vaultTokensSupply;
-  let FarmTokensSupply;
   const tolerance = utils.parseEther("0.0001")
-
-
-
 
 
   beforeEach(async () => {
@@ -77,7 +72,7 @@ describe("Vault", () => {
     });
 
     it('calculatePerFarmEmissions()', async () => {
-      expect(await vaultContract.connect(addr1).calculatePerFarmEmissions())
+      expect(await vaultContract.connect(addr1).calculatePerFarmEmissions(farmContract.address))
       .to.be.ok;
     });
 
@@ -101,10 +96,10 @@ describe("Vault", () => {
       .to.be.ok;
     });
 
-    it('getPerFarmEmissions()', async () => {
-      expect(await vaultContract.connect(addr1).getPerFarmEmissions(addr1.address))
-      .to.be.ok;
-    });
+    // it('getPerFarmEmissions()', async () => {
+    //   expect(await vaultContract.connect(addr1).getPerFarmEmissions(addr1.address))
+    //   .to.be.ok;
+    // });
 
     it('isFarmActive()', async () => {
         await expect(vaultContract.connect(addr1).isFarmActive(addr1.address))
@@ -389,10 +384,8 @@ describe("Vault", () => {
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
-      // ACTION: Distribute emissions to farms
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(farmContract.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.equal(initialBalance);
     });
 
@@ -407,17 +400,14 @@ describe("Vault", () => {
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
-      // ACTION: Distribute emissions to farms
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(farmContract.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.equal(initialBalance);
       // Increase time check again
       await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
       await expect(vaultContract.calculateEmissions());  
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(farmContract.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.equal(initialBalance);
 
     });
@@ -439,10 +429,8 @@ describe("Vault", () => {
       const t1_emissions=await vaultContract.emissions();
       // CHECK: Emissions
       expect(t1_emissions).to.be.closeTo(expecteedEmissions, tolerance);
-      // ACTION: Distribute emissions to farms
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(farmContract.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.be.closeTo(expecteedEmissions, tolerance);
       });
 
@@ -464,11 +452,9 @@ describe("Vault", () => {
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
-      // ACTION: Distribute emissions to farms
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(addr1.address);
-      var farm2Emissions = await vaultContract.getPerFarmEmissions(addr2.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(addr1.address);
+      var farm2Emissions = await vaultContract.calculatePerFarmEmissions(addr2.address);
       expect(farm1Emissions).to.equal(initialBalance.mul(farm1Percent).div(100));
       expect(farm2Emissions).to.equal(initialBalance.mul(farm2Percent).div(100));
     });  
@@ -496,11 +482,9 @@ describe("Vault", () => {
       const t1_emissions=await vaultContract.emissions();
       // CHECK: Emissions
       expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
-      // ACTION: Distribute emissions to farms
-      await vaultContract.calculatePerFarmEmissions();
       // CHECK: Per farm emissions match expected percent
-      var farm1Emissions = await vaultContract.getPerFarmEmissions(addr1.address);
-      var farm2Emissions = await vaultContract.getPerFarmEmissions(addr2.address);
+      var farm1Emissions = await vaultContract.calculatePerFarmEmissions(addr1.address);
+      var farm2Emissions = await vaultContract.calculatePerFarmEmissions(addr2.address);
       expect(farm1Emissions).to.be.closeTo(t1_emissions.mul(farm1Percent).div(100), tolerance);
       expect(farm2Emissions).to.be.closeTo(t1_emissions.mul(farm2Percent).div(100), tolerance);      
       });      
@@ -541,17 +525,16 @@ describe("Vault", () => {
       // ACTION: Increase Time
       const increaseTime = 3;
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
+      await ethers.provider.send('evm_mine');
       // ACTION: Send Emissions to farm
       await vaultContract.sendToFarm();  
      
-      // ACTION: Current time and seconds passed
+      // CHECK: Per farm emissions match expected percent
       var currentTime = await getCurrentTime()
       const secondsPassed = currentTime.sub(t0);
-      // ACTION: Calculate Expected Emissions
       const expecteedEmissionsTotal = secondsPassed.mul(tokensPerSecond);
       const expecteedEmissionsFarm1 = expecteedEmissionsTotal.mul(farm1Percent).div(100);
       const expecteedEmissionsFarm2 = expecteedEmissionsTotal.mul(farm2Percent).div(100);
-      // CHECK: Per farm emissions match expected percent
       const farm1Balance = await tokenContract.balanceOf(addr1.address);
       const farm2Balance = await tokenContract.balanceOf(addr2.address);
       expect(farm1Balance).to.be.closeTo(expecteedEmissionsFarm1, tolerance);
