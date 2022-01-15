@@ -11,15 +11,15 @@ contract Vault is Ownable {
   address[] public farmTokens;
   uint256[] public farmPercents;
   address[] public activeFarmTokens;
-  //mapping(address => bool) public  isFarm;
-  mapping(address => uint256) public perFarmEmissions; // token contract to yield % of emissions from vault
+  
+  // token contract to yield % of emissions from vault
   mapping(address => uint256) public activeFarmPercents;
 
   uint256 public lastEmissionsTime; // Unrealized time
   uint256 public emissions; // Tokens available for transfer
-  
-  uint256 public tokensPerSecond= 475646879756468797; // Set the contract payout rate [s]
-  uint256 public secondsPerToken=2102400000000000000; // Set the contract payout rate [s]
+  // Set the Vault emissions rate [s]
+  uint256 public tokensPerSecond= 475646879756468797; 
+  uint256 public secondsPerToken=2102400000000000000;
   
   uint256 public vaultStartTime;
   uint256 public secondsIn5Years=157680000;
@@ -40,9 +40,14 @@ contract Vault is Ownable {
       percent>=0 && percent<=100,
       "Percent must be between 0 and 100"
     );
-
     farmTokens.push(tokenAddress);
     farmPercents.push(percent);    
+  }
+
+
+  function resetInitialization() public onlyOwner {
+    delete farmTokens;
+    delete farmPercents;
   }
 
 
@@ -56,8 +61,8 @@ contract Vault is Ownable {
       farmTokens.length == farmPercents.length,
       "Addresses and percents must be of equal length"
     );
-
-    uint256 totalPercent=calculateTotalPercent();
+    uint256 totalPercent=0;
+    totalPercent=calculateTotalPercent();
     require(totalPercent==100, "Total Percent must be 100");
     killActiveFarms();
     // SET NEW FARMS
@@ -69,11 +74,10 @@ contract Vault is Ownable {
         address addr = farmTokens[idx];
         activeFarmPercents[addr]=farmPercents[idx];
         activeFarmTokens.push(addr);
-        }
-    
-    delete farmTokens;
-    delete farmPercents;
+        }    
+    resetInitialization();
   }
+
 
   function calculateTotalPercent() public view onlyOwner returns (uint256){
     uint256 totalPercent = 0;
@@ -87,12 +91,18 @@ contract Vault is Ownable {
     return totalPercent;
   }
 
-  function resetInitialization() public onlyOwner {
-    delete farmTokens;
-    delete farmPercents;
-  }
 
   function killActiveFarms() public onlyOwner {
+    // Cannot delete mapping. Set ther old farm percents 
+    //  to zero then delete the activeFarm array
+    for (
+      uint256 idx = 0;
+      idx < activeFarmTokens.length;
+      idx++
+      ) {        
+        address addr = activeFarmTokens[idx];
+        activeFarmPercents[addr]=0;
+        }    
     delete activeFarmTokens;
   }
 
@@ -103,11 +113,13 @@ contract Vault is Ownable {
       "Nothing to withdraw"
       );
 
-    uint256 vaultBalance = crownToken.balanceOf(address(this));
+    uint256 vaultBalance = 0;
+    vaultBalance = crownToken.balanceOf(address(this));
     require(vaultBalance >= emissions,
           "Insuffcient funds in Vault Contract");        
-    calculatePerFarmEmissions();
-    emissions=0;
+    
+    uint256 amountToFarms = 0;
+    amountToFarms = emissions;
     
     for (
       uint256 idx = 0;
@@ -116,13 +128,16 @@ contract Vault is Ownable {
       ) { 
         uint256 toTransfer = 0;
         address farmAddr = activeFarmTokens[idx];
-        toTransfer =perFarmEmissions[farmAddr];
-
+        
+        toTransfer =calculatePerFarmEmissions(farmAddr);
+        amountToFarms-=toTransfer;
         (bool sent) = crownToken.transfer(farmAddr, toTransfer);
         require(sent, "Failed to withdraw Tokens");
         
         emit EmissionsSent(farmAddr, toTransfer);
       }
+    emissions=0;
+
   } 
 
   function calculateEmissions() public {
@@ -133,24 +148,13 @@ contract Vault is Ownable {
     uint256 secondsPassed = (end - t0) * 10**18;   
     emissions += (secondsPassed * 10**18)/ secondsPerToken;
     
-    uint256 available = crownToken.balanceOf(address(this));
+    uint256 available = 0;
+    available = crownToken.balanceOf(address(this));
     if(emissions >  available){
       emissions=available;
     }
     emit UpdateEmissions(emissions);
   }     
-
-  function calculatePerFarmEmissions() public {
-    for (
-      uint256 idx = 0;
-      idx < activeFarmTokens.length;
-      idx++
-      ) { 
-        address addr = activeFarmTokens[idx];
-        uint256 farmPercent = activeFarmPercents[addr];
-        perFarmEmissions[addr]= (emissions * farmPercent)/100;
-      }
-  }
 
   function getFarmTokens() public view returns (address[] memory) {
     return farmTokens;
@@ -181,8 +185,11 @@ contract Vault is Ownable {
     return farmSecondsPerToken;
   }
 
-  function getPerFarmEmissions(address farmAddr) public view returns(uint256) {        
-    return perFarmEmissions[farmAddr];
+  function calculatePerFarmEmissions(address farmAddr) public view returns(uint256) {        
+    uint256 farmPercent = activeFarmPercents[farmAddr];
+    uint256 perFarmEmission= (emissions * farmPercent)/100;
+    
+    return perFarmEmission;
   }
 
   function isFarmActive(address farmAddr) public view returns(bool) {
