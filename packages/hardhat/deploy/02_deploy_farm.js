@@ -23,21 +23,20 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   // Set the farm address to Farm contract
   console.log("\n Set Farm address to Farm Contract\n");
-  const setFarmAddress = await vault.assignFarm(
-    farm.address,
-  );
+  const setFarmAddress = await vault.initializeFarm(farm.address, 100);
+  await vault.setFarms();
   console.log("\n    ✅ confirming farm address...\n");
-  await sleep(1000); // wait 5 seconds for transaction to propagate
+  await sleep(15000); // wait 15 seconds for transaction to propagate
 
 
   // Change address to DAO Multisig
-  console.log("\n 🤹  Sending Vault ownership to DAO Multisig...\n");
-  const ownershipTransaction = await vault.transferOwnership("0x69dA48Df7177bc57639F1015E3B9a00f96f7c1d1");
+  console.log("\n 🤹  Sending Vault ownership to DAO Multisig...\n")
+  const ownershipTransaction = await vault.transferOwnership("0x9A2bC9d6E57684F3FfC26550442655B526b30B09" );
   console.log("\n    ✅ confirming...\n");
   const ownershipResult = await ownershipTransaction.wait();
 
-  console.log("\n 🤹  Sending Farm ownership to DAO Multisig...\n");
-  const ownershipTransaction2 = await farm.transferOwnership("0x69dA48Df7177bc57639F1015E3B9a00f96f7c1d1");
+  console.log("\n 🤹  Sending Farm ownership to DAO Multisig...\n")
+  const ownershipTransaction2 = await farm.transferOwnership("0x9A2bC9d6E57684F3FfC26550442655B526b30B09" );
   console.log("\n    ✅ confirming...\n");
   const ownershipResult2 = await ownershipTransaction2.wait();
 
