@@ -29,8 +29,10 @@ import deployedContracts from "./contracts/hardhat_contracts.json";
 
 const { ethers } = require("ethers");
 
-const targetNetwork = NETWORKS.localhost;
+/// 📡 What chain are your contracts deployed to?
+const targetNetwork = NETWORKS.rinkebyArbitrum; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
 
+// 😬 Sorry for all the console logging
 const DEBUG = true;
 const NETWORKCHECK = true;
 

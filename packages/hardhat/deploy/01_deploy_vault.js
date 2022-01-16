@@ -26,20 +26,20 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
   const transferTransaction1 = await crownToken.transfer(
     vault.address,
-    ethers.utils.parseEther("75000000"),
+    ethers.utils.parseEther("75000000")
   );
   console.log("\n    ✅ confirming transfer...\n");
-  await sleep(1000); // wait 1 seconds for transaction to propagate
+  await sleep(15000); // wait 15 seconds for transaction to propagate
 
   // Transfer the tokens to the vault
   console.log("\n 🏵  Send 25% of tokens to DAO Multisig...\n");
 
   const transferTransaction2 = await crownToken.transfer(
-    "0x69dA48Df7177bc57639F1015E3B9a00f96f7c1d1",
-    ethers.utils.parseEther("25000000"),
+    "0x9A2bC9d6E57684F3FfC26550442655B526b30B09",
+    ethers.utils.parseEther("25000000")
   );
   console.log("\n    ✅ confirming transfer...\n");
-  await sleep(1000); // wait 5 seconds for transaction to propagate  
+  await sleep(15000); // wait 15 seconds for transaction to propagate
 
 };
 
