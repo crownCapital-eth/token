@@ -2,26 +2,42 @@ pragma solidity 0.8.4;
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "./CrownToken.sol";
 
-contract Vault is Ownable {
+/// @title Crown Capital Vault
+/// @author sters.eth
+/// @notice Contract sends token emissions to farms over a 5 year period
+contract Vault is Ownable, Pausable {
 
     string public name = "Crown Capital Vault";
 
+    /// @dev Array of initialized tokens to set as farm
     address[] public farmTokens;
+
+    /// @dev Array of initialized percents to set with intialized tokens
     uint256[] public farmPercents;
+
+    /// @dev Array of active farms
     address[] public activeFarmTokens;
 
-    // token contract to yield % of emissions from vault
+    /// @dev token contract to yield % of emissions from vault
     mapping(address => uint256) public activeFarmPercents;
 
-    uint256 public lastEmissionsTime; // Unrealized time
-    uint256 public emissions; // Tokens available for transfer
-    // Set the Vault emissions rate [s]
+    /// @dev last time emissions were updated
+    uint256 public lastEmissionsTime;
+
+    /// @dev Tokens available for transfer from the farm
+    uint256 public emissions;
+
+    /// @dev The Vault emissions rate in seconds
     uint256 public tokensPerSecond= 475646879756468797;
     uint256 public secondsPerToken=2102400000000000000;
 
+    /// @dev the time the vault was deployed
     uint256 public vaultStartTime;
+
+    /// @dev the seconds in five years
     uint256 public secondsIn5Years=157680000;
 
     event EmissionsSent(address farmAddress, uint256 amount);
@@ -35,6 +51,10 @@ contract Vault is Ownable {
         emissions=0;
     }
 
+    /** @dev Owner may intialize a new farm or set of farms 1 at a time.
+    * @param tokenAddress address of farm.
+    * @param percent 0 to 100 percent of the emssions which do to specified farm.
+    */
     function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner {
         require(
             percent>=0 && percent<=100,
@@ -44,13 +64,20 @@ contract Vault is Ownable {
         farmPercents.push(percent);
     }
 
-
+    /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
     function resetInitialization() public onlyOwner {
         delete farmTokens;
         delete farmPercents;
     }
 
+    /// @dev Owner sets the farm from the initialized farms
+    function resetInitialization() public onlyOwner {
+        delete farmTokens;
+        delete farmPercents;
+    }
 
+    /** @dev used to set the active farms following intialization
+   */
     function setFarms() public onlyOwner{
         require(
             farmTokens.length >= 1,
@@ -78,7 +105,7 @@ contract Vault is Ownable {
         resetInitialization();
     }
 
-
+    /// @dev Owner may calculate the the total percent from all initialized farms
     function calculateTotalPercent() public view onlyOwner returns (uint256){
         uint256 totalPercent = 0;
         for (
@@ -91,10 +118,11 @@ contract Vault is Ownable {
         return totalPercent;
     }
 
-
+    /** @dev Kill switch to remove all active farms.
+    Cannot delete mapping. Set ther old farm percents
+    to zero then delete the activeFarm array
+  */
     function killActiveFarms() public onlyOwner {
-        // Cannot delete mapping. Set ther old farm percents
-        //  to zero then delete the activeFarm array
         for (
             uint256 idx = 0;
             idx < activeFarmTokens.length;
@@ -106,7 +134,8 @@ contract Vault is Ownable {
         delete activeFarmTokens;
     }
 
-    function sendToFarm() public {
+    /// @dev sends all emissions to farms based on percentage of total emissions
+    function sendToFarm() public whenNotPaused {
         calculateEmissions();
         require(
             emissions > 0 ,
@@ -137,9 +166,9 @@ contract Vault is Ownable {
             emit EmissionsSent(farmAddr, toTransfer);
         }
         emissions=0;
-
     }
 
+    /// @dev Calculates the total emissions
     function calculateEmissions() public {
         uint256 t0=0;
         t0=lastEmissionsTime;
@@ -156,18 +185,25 @@ contract Vault is Ownable {
         emit UpdateEmissions(emissions);
     }
 
+    /// @return array of initialized farm addresses
     function getFarmTokens() public view returns (address[] memory) {
         return farmTokens;
     }
 
+    /// @return array of initialized farm percentages
     function getFarmPercents() public view returns (uint256[] memory) {
         return farmPercents;
     }
 
+    /// @return array of active farm tokens
     function getActiveFarmTokens() public view returns (address[] memory) {
         return activeFarmTokens;
     }
 
+    /** @dev returns the percentange of current emissions an address recieves
+  * @param farmAddr farm address to query
+  * @return the percentage of current emmissions going to farmAddr
+  */
     function getActiveFarmPercents(address farmAddr) public view returns(uint256) {
         uint256 percent = 0;
         if(isFarmActive(farmAddr)){
@@ -176,6 +212,11 @@ contract Vault is Ownable {
         return percent;
     }
 
+    /** @dev calculates the seconds per token to a specific farm based on percentage of total
+  * This is used by the farm to determine each user's yield.
+  * @param farmAddr farm address to query
+  * @return seconds per token the farm is currently generating
+  */
     function getFarmSecondsPerToken(address farmAddr) public view returns(uint256) {
         uint256 farmSecondsPerToken = 0;
         if(isFarmActive(farmAddr)){
@@ -185,14 +226,22 @@ contract Vault is Ownable {
         return farmSecondsPerToken;
     }
 
+    /** @dev calculates the emissions to a farm based on the perctage of
+  * emssions.
+  * @param farmAddr farm address to query
+  * @return perFarmEmission the Emissions going to farmAddr
+  */
     function calculatePerFarmEmissions(address farmAddr) public view returns(uint256) {
         uint256 farmPercent = activeFarmPercents[farmAddr];
         uint256 perFarmEmission= (emissions * farmPercent)/100;
 
         return perFarmEmission;
-
     }
 
+    /** @dev iterates over active farms to determine is passed address is in the array
+  * @param farmAddr farm address to query
+  * @return isActive - true if passed address is an active farm else false.
+  */
     function isFarmActive(address farmAddr) public view returns(bool) {
         address addr;
         bool isActive = false;
