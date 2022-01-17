@@ -3,35 +3,7 @@ import { Badge, Input } from "antd";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
 import React, { useCallback, useState } from "react";
 import QrReader from "react-qr-reader";
-import Blockie from "./Blockie";
 import { ethers } from "ethers";
-
-// probably we need to change value={toAddress} to address={toAddress}
-
-/*
-  ~ What it does? ~
-
-  Displays an address input with QR scan option
-
-  ~ How can I use? ~
-
-  <AddressInput
-    autoFocus
-    ensProvider={mainnetProvider}
-    placeholder="Enter address"
-    value={toAddress}
-    onChange={setToAddress}
-  />
-
-  ~ Features ~
-
-  - Provide ensProvider={mainnetProvider} and your address will be replaced by ENS name
-              (ex. "0xa870" => "user.eth") or you can enter directly ENS name instead of address
-  - Provide placeholder="Enter address" value for the input
-  - Value of the address input is stored in value={toAddress}
-  - Control input change by onChange={setToAddress}
-                          or onChange={address => { setToAddress(address);}}
-*/
 
 const isENS = (address = "") => address.endsWith(".eth") || address.endsWith(".xyz");
 
@@ -111,7 +83,6 @@ export default function AddressInput(props) {
         autoComplete="off"
         autoFocus={props.autoFocus}
         placeholder={props.placeholder ? props.placeholder : "address"}
-        prefix={<Blockie address={currentValue} size={8} scale={3} />}
         value={ethers.utils.isAddress(currentValue) && !isENS(currentValue) && isENS(ens) ? ens : currentValue}
         addonAfter={
           <div

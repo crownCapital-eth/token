@@ -14,19 +14,19 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   // Deploy the Farm
   await deploy("Farm", {
     from: deployer,
-    args: [crownToken.address, vault.address], 
+    args: [crownToken.address, vault.address],
     log: true,
   });
 
-  const farm = await ethers.getContract("Farm", deployer);  
+  const farm = await ethers.getContract("Farm", deployer);
 
 
- // Set the farm address to Farm contract
- console.log("\n Set Farm address to Farm Contract\n");
- const setFarmAddress = await vault.initializeFarm(farm.address, 100); 
-						await vault.setFarms();  
- console.log("\n    ✅ confirming farm address...\n");
- await sleep(15000); // wait 15 seconds for transaction to propagate    
+  // Set the farm address to Farm contract
+  console.log("\n Set Farm address to Farm Contract\n");
+  const setFarmAddress = await vault.initializeFarm(farm.address, 100);
+  await vault.setFarms();
+  console.log("\n    ✅ confirming farm address...\n");
+  await sleep(15000); // wait 15 seconds for transaction to propagate
 
 
   // Change address to DAO Multisig
