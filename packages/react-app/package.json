@@ -85,8 +85,6 @@
     "surge": "cp build/index.html build/200.html && surge ./build",
     "ship": "yarn surge",
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore ./src/**/*",
-    "theme": "npx gulp less",
-    "watch": "node ./scripts/watch.js",
     "prettier": "npx prettier --write . '!(node_module|build)/**/*'"
   }
 }

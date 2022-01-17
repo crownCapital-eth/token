@@ -1,27 +1,16 @@
 import Portis from "@portis/web3";
 import WalletConnectProvider from "@walletconnect/web3-provider";
-import { Alert, Button, Card, Col, Input, Menu, Row, Layout } from "antd";
+import { Alert, Button, Card, Col, Input, Layout, Row, Space } from "antd";
 import "antd/dist/antd.css";
 import Authereum from "authereum";
-import {
-  useBalance,
-  useContractLoader,
-  useContractReader,
-  useGasPrice,
-  useOnBlock,
-  useUserProviderAndSigner,
-} from "eth-hooks";
+import { useBalance, useContractLoader, useContractReader, useGasPrice, useUserProviderAndSigner } from "eth-hooks";
 import Fortmatic from "fortmatic";
 import React, { useCallback, useEffect, useState } from "react";
-import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import WalletLink from "walletlink";
 import Web3Modal from "web3modal";
-import "./App.less";
-import { Account, Balance, Contract, HeaderBar } from "./components";
+import { Account, Balance, HeaderBar } from "./components";
 import { INFURA_ID, NETWORK, NETWORKS } from "./constants";
 import { Transactor } from "./helpers";
-import Background from "./cc-waves-bg-mobile.jpeg";
-
 import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 
@@ -46,8 +35,6 @@ const localProviderUrl = targetNetwork.rpcUrl;
 
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
-
-const blockExplorer = targetNetwork.blockExplorer;
 
 const walletLink = new WalletLink({
   appName: "coinbase",
@@ -148,16 +135,12 @@ function App() {
     userSigner && userSigner.provider && userSigner.provider._network && userSigner.provider._network.chainId;
 
   const tx = Transactor(userSigner, gasPrice);
-  const faucetTx = Transactor(localProvider, gasPrice);
   const yourLocalBalance = useBalance(localProvider, address);
   const yourMainnetBalance = useBalance(mainnetProvider, address);
   const contractConfig = { deployedContracts: deployedContracts || {}, externalContracts: externalContracts || {} };
   const readContracts = useContractLoader(localProvider, contractConfig);
   const writeContracts = useContractLoader(userSigner, contractConfig, localChainId);
   const mainnetContracts = useContractLoader(mainnetProvider, contractConfig);
-  useOnBlock(mainnetProvider, () => {
-    console.log(`⛓ A new mainnet block is here: ${mainnetProvider._lastBlockNumber}`);
-  });
 
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
   const farmApproval = useContractReader(readContracts, "CrownToken", "allowance", [address, farmAddress]);
@@ -261,7 +244,7 @@ function App() {
     const provider = await web3Modal.connect();
     setInjectedProvider(new ethers.providers.Web3Provider(provider));
 
-    provider.on("chainChanged", chainId => {
+    provider.on("chainChanged", () => {
       setInjectedProvider(new ethers.providers.Web3Provider(provider));
     });
 
@@ -269,7 +252,7 @@ function App() {
       setInjectedProvider(new ethers.providers.Web3Provider(provider));
     });
 
-    provider.on("disconnect", (code, reason) => {
+    provider.on("disconnect", () => {
       logoutOfWeb3Modal();
     });
   }, [setInjectedProvider]);
@@ -284,34 +267,6 @@ function App() {
   useEffect(() => {
     setRoute(window.location.pathname);
   }, [setRoute]);
-
-  let faucetHint = "";
-  const [faucetClicked, setFaucetClicked] = useState(false);
-  if (
-    !faucetClicked &&
-    localProvider &&
-    localProvider._network &&
-    localProvider._network.chainId === 31337 &&
-    yourLocalBalance &&
-    ethers.utils.formatEther(yourLocalBalance) <= 0
-  ) {
-    faucetHint = (
-      <div style={{ padding: 16 }}>
-        <Button
-          type="primary"
-          onClick={() => {
-            faucetTx({
-              to: address,
-              value: ethers.utils.parseEther("1"),
-            });
-            setFaucetClicked(true);
-          }}
-        >
-          💰 Grab funds from the faucet ⛽️
-        </Button>
-      </div>
-    );
-  }
 
   const [amountToStake, setAmountToStake] = useState();
   const [amountToUnstake, setAmountToUnstake] = useState();
@@ -342,7 +297,7 @@ function App() {
         <div style={{ padding: 8 }}>
           <Input
             style={{ textAlign: "center" }}
-            placeholder={"number of tokens to stake"}
+            placeholder={"Number of tokens to stake"}
             value={amountToStake}
             onChange={e => {
               setAmountToStake(e.target.value);
@@ -350,36 +305,36 @@ function App() {
           />
         </div>
         <div style={{ padding: 8 }}>
-          <Button
-            type={"primary"}
-            loading={buying}
-            onClick={async () => {
-              setBuying(true);
-              await tx(
-                writeContracts.CrownToken.approve(
-                  readContracts.Farm.address,
-                  amountToStake && ethers.utils.parseEther(amountToStake),
-                ),
-              );
-              setBuying(false);
-            }}
-          >
-            Approve Tokens
-          </Button>
-        </div>
+          <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              type={"primary"}
+              loading={buying}
+              onClick={async () => {
+                setBuying(true);
+                await tx(
+                  writeContracts.CrownToken.approve(
+                    readContracts.Farm.address,
+                    amountToStake && ethers.utils.parseEther(amountToStake),
+                  ),
+                );
+                setBuying(false);
+              }}
+            >
+              Approve Tokens
+            </Button>
 
-        <div style={{ padding: 8 }}>
-          <Button
-            type={"primary"}
-            loading={buying}
-            onClick={async () => {
-              setBuying(true);
-              await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
-              setBuying(false);
-            }}
-          >
-            Stake Tokens
-          </Button>
+            <Button
+              type={"primary"}
+              loading={buying}
+              onClick={async () => {
+                setBuying(true);
+                await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
+                setBuying(false);
+              }}
+            >
+              Stake Tokens
+            </Button>
+          </Space>
         </div>
       </div>
     ),
@@ -396,17 +351,19 @@ function App() {
           />
         </div>
         <div style={{ padding: 8 }}>
-          <Button
-            type={"primary"}
-            loading={buying}
-            onClick={async () => {
-              setBuying(true);
-              await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
-              setBuying(false);
-            }}
-          >
-            Stop Staking
-          </Button>
+          <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
+            <Button
+              type={"primary"}
+              loading={buying}
+              onClick={async () => {
+                setBuying(true);
+                await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
+                setBuying(false);
+              }}
+            >
+              Stop Staking
+            </Button>
+          </Space>
         </div>
       </div>
     ),
@@ -433,125 +390,70 @@ function App() {
   };
 
   return (
-    <Layout>
-      <Header>
+    <Layout style={{ height: "100vh" }}>
+      <Header className={"navbar w-nav"}>
         <HeaderBar />
       </Header>
       <Content>
-        <div className="App" style={{ backgroundImage: "url(" + Background + ")" }}>
+        <div className="App">
           {networkDisplay}
-          <BrowserRouter>
-            <Menu style={{ textAlign: "center" }} selectedKeys={[route]} mode="horizontal">
-              <Menu.Item key="/">
-                <Link
-                  onClick={() => {
-                    setRoute("/");
-                  }}
-                  to="/"
-                >
-                  Crown Farm
-                </Link>
-              </Menu.Item>
-              <Menu.Item key="/contracts">
-                <Link
-                  onClick={() => {
-                    setRoute("/contracts");
-                  }}
-                  to="/contracts"
-                >
-                  Debug Contracts
-                </Link>
-              </Menu.Item>
-            </Menu>
-
-            <Switch>
-              <Route exact path="/">
-                <div className="site-card-wrapper">
-                  <Row gutter={16}>
-                    <Col span={8}>
-                      <Card title="Crown Tokens Owned">
-                        <div style={{ padding: 8 }}>
-                          <Balance balance={CrownTokenBalance} fontSize={64} />
-                        </div>
-                      </Card>
-                    </Col>
-
-                    <Col span={8}>
-                      <StakeCard />
-                    </Col>
-
-                    <Col span={8}>
-                      <Card title="Yield Generated">
-                        <div style={{ padding: 8 }}>
-                          <Balance balance={UserYield} fontSize={64} />
-                        </div>
-
-                        <div style={{ padding: 8 }}>
-                          <Button
-                            type={"primary"}
-                            loading={claiming}
-                            onClick={async () => {
-                              setClaiming(true);
-                              await tx(writeContracts.Farm.updateYield());
-                              setClaiming(false);
-                            }}
-                          >
-                            Update
-                          </Button>
-
-                          <Button
-                            type={"primary"}
-                            loading={claiming}
-                            onClick={async () => {
-                              setClaiming(true);
-                              await tx(writeContracts.Farm.withdrawYield());
-                              setClaiming(false);
-                            }}
-                          >
-                            Claim
-                          </Button>
-                        </div>
-                      </Card>
-                    </Col>
-                  </Row>
+          <Row />
+          <Row style={{ alignItems: "center" }} gutter={16} justify="center" type="flex" align="middle">
+            <Col span={8}>
+              <Card title="Crown Tokens Owned" className={"ant-card-small"}>
+                <div style={{ padding: 8 }}>
+                  <Balance balance={CrownTokenBalance} fontSize={64} />
                 </div>
-              </Route>
-              <Route path="/contracts">
-                <Contract
-                  name="CrownToken"
-                  signer={userSigner}
-                  provider={localProvider}
-                  address={address}
-                  blockExplorer={blockExplorer}
-                  contractConfig={contractConfig}
-                />
-                <Contract
-                  name="Vault"
-                  signer={userSigner}
-                  provider={localProvider}
-                  address={address}
-                  blockExplorer={blockExplorer}
-                  contractConfig={contractConfig}
-                />
-                <Contract
-                  name="Farm"
-                  signer={userSigner}
-                  provider={localProvider}
-                  address={address}
-                  blockExplorer={blockExplorer}
-                  contractConfig={contractConfig}
-                />
-              </Route>
-            </Switch>
-          </BrowserRouter>
+              </Card>
+            </Col>
 
-          <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>
-            <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-            {faucetHint}
-          </div>
+            <Col span={8}>
+              <StakeCard />
+            </Col>
+
+            <Col span={8}>
+              <Card title="Yield Generated" className={"ant-card-small"}>
+                <div style={{ padding: 8 }}>
+                  <Balance balance={UserYield} fontSize={64} />
+                </div>
+
+                <div style={{ padding: 8 }}>
+                  <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
+                    <Button
+                      type={"primary"}
+                      loading={claiming}
+                      onClick={async () => {
+                        setClaiming(true);
+                        await tx(writeContracts.Farm.updateYield());
+                        setClaiming(false);
+                      }}
+                    >
+                      Update
+                    </Button>
+
+                    <Button
+                      type={"primary"}
+                      loading={claiming}
+                      onClick={async () => {
+                        setClaiming(true);
+                        await tx(writeContracts.Farm.withdrawYield());
+                        setClaiming(false);
+                      }}
+                    >
+                      Claim
+                    </Button>
+                  </Space>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+          <Row />
+        </div>
+        <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>
+          <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
         </div>
       </Content>
-      <Footer></Footer>
+      <Footer />
     </Layout>
   );
 }
