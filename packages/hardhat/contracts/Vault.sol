@@ -71,6 +71,13 @@ contract Vault is Ownable, Pausable {
   }
 
   /// @dev Owner sets the farm from the initialized farms
+  function resetInitialization() public onlyOwner {
+    delete farmTokens;
+    delete farmPercents;
+  }
+
+  /** @dev used to set the active farms following intialization
+   */
   function setFarms() public onlyOwner{   
     require(
       farmTokens.length >= 1,
@@ -98,7 +105,6 @@ contract Vault is Ownable, Pausable {
     resetInitialization();
   }
 
-
   /// @dev Owner may calculate the the total percent from all initialized farms
   function calculateTotalPercent() public view onlyOwner returns (uint256){
     uint256 totalPercent = 0;
@@ -111,12 +117,12 @@ contract Vault is Ownable, Pausable {
         }
     return totalPercent;
   }
+
   /** @dev Kill switch to remove all active farms.
     Cannot delete mapping. Set ther old farm percents 
     to zero then delete the activeFarm array
   */
   function killActiveFarms() public onlyOwner {
-
     for (
       uint256 idx = 0;
       idx < activeFarmTokens.length;
