@@ -1,11 +1,7 @@
 import { Button } from "antd";
 import React from "react";
 
-export default function Account({
-                                  web3Modal,
-                                  loadWeb3Modal,
-                                  logoutOfWeb3Modal,
-                                }) {
+export default function Account({ web3Modal, loadWeb3Modal, logoutOfWeb3Modal }) {
   const modalButtons = [];
   if (web3Modal) {
     if (web3Modal.cachedProvider) {
@@ -35,9 +31,5 @@ export default function Account({
     }
   }
 
-  return (
-    <div>
-      {modalButtons}
-    </div>
-  );
+  return <div>{modalButtons}</div>;
 }
