@@ -70,12 +70,6 @@ contract Vault is Ownable, Pausable {
     delete farmPercents;
   }
 
-  /// @dev Owner sets the farm from the initialized farms
-  function resetInitialization() public onlyOwner {
-    delete farmTokens;
-    delete farmPercents;
-  }
-
   /** @dev used to set the active farms following intialization
    */
   function setFarms() public onlyOwner{   
