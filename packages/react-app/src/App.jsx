@@ -1,6 +1,6 @@
 import Portis from "@portis/web3";
 import WalletConnectProvider from "@walletconnect/web3-provider";
-import { Alert, Button, Card, Divider, Input, List, Menu, Row, Col, Space } from "antd";
+import { Alert, Button, Card, Col, Input, Menu, Row, Layout } from "antd";
 import "antd/dist/antd.css";
 import Authereum from "authereum";
 import {
@@ -11,30 +11,24 @@ import {
   useOnBlock,
   useUserProviderAndSigner,
 } from "eth-hooks";
-import { useEventListener } from "eth-hooks/events/useEventListener";
 import Fortmatic from "fortmatic";
 import React, { useCallback, useEffect, useState } from "react";
 import { BrowserRouter, Link, Route, Switch } from "react-router-dom";
 import WalletLink from "walletlink";
 import Web3Modal from "web3modal";
 import "./App.less";
-import { Account, AddressInput, Balance, Contract, Header } from "./components";
+import { Account, Balance, Contract, HeaderBar } from "./components";
 import { INFURA_ID, NETWORK, NETWORKS } from "./constants";
 import { Transactor } from "./helpers";
 import Background from "./cc-waves-bg-mobile.jpeg";
 
-// contracts
 import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 
 const { ethers } = require("ethers");
-
-/// 📡 What chain are your contracts deployed to?
-const targetNetwork = NETWORKS.rinkebyArbitrum; // <------- select your target frontend network (localhost, rinkeby, xdai, mainnet)
-
-// 😬 Sorry for all the console logging
-const DEBUG = true;
-const NETWORKCHECK = true;
+const { Header, Footer, Content } = Layout;
+const targetNetwork = NETWORKS.rinkebyArbitrum;
+const NETWORK_CHECK = true;
 
 const scaffoldEthProvider = navigator.onLine
   ? new ethers.providers.StaticJsonRpcProvider("https://rpc.scaffoldeth.io:48544")
@@ -51,7 +45,6 @@ const mainnetInfura = navigator.onLine
 const localProviderUrl = targetNetwork.rpcUrl;
 
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
-if (DEBUG) console.log("🏠 Connecting to provider:", localProviderUrlFromEnv);
 const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
 
 const blockExplorer = targetNetwork.blockExplorer;
@@ -63,8 +56,8 @@ const walletLink = new WalletLink({
 const walletLinkProvider = walletLink.makeWeb3Provider(`https://mainnet.infura.io/v3/${INFURA_ID}`, 1);
 
 const web3Modal = new Web3Modal({
-  network: "mainnet", // Optional. If using WalletConnect on xDai, change network to "xdai" and add RPC info below for xDai chain.
-  cacheProvider: true, // optional
+  network: "mainnet",
+  cacheProvider: true,
   theme: "dark",
   providerOptions: {
     walletconnect: {
@@ -73,7 +66,7 @@ const web3Modal = new Web3Modal({
         bridge: "https://polygon.bridge.walletconnect.org",
         infuraId: INFURA_ID,
         rpc: {
-          1: `https://mainnet.infura.io/v3/${INFURA_ID}`, // mainnet // For more WalletConnect providers: https://docs.walletconnect.org/quick-start/dapps/web3-provider#required
+          1: `https://mainnet.infura.io/v3/${INFURA_ID}`,
           42: `https://kovan.infura.io/v3/${INFURA_ID}`,
           100: "https://dai.poa.network", // xDai
         },
@@ -91,9 +84,9 @@ const web3Modal = new Web3Modal({
       },
     },
     fortmatic: {
-      package: Fortmatic, // required
+      package: Fortmatic,
       options: {
-        key: "pk_live_5A7C91B2FC585A17", // required
+        key: "pk_live_5A7C91B2FC585A17",
       },
     },
     "custom-walletlink": {
@@ -114,7 +107,7 @@ const web3Modal = new Web3Modal({
   },
 });
 
-function App(props) {
+function App() {
   const mainnetProvider =
     poktMainnetProvider && poktMainnetProvider._isProvider
       ? poktMainnetProvider
@@ -167,42 +160,11 @@ function App(props) {
   });
 
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
-
   const farmApproval = useContractReader(readContracts, "CrownToken", "allowance", [address, farmAddress]);
-  console.log("🤏 farmApproval", farmApproval);
-
-  const farmTokenBalance = useContractReader(readContracts, "CrownToken", "balanceOf", [farmAddress]);
-  console.log("🏵 farmTokenBalance:", farmTokenBalance ? ethers.utils.formatEther(farmTokenBalance) : "...");
-
   const CrownTokenBalance = useContractReader(readContracts, "CrownToken", "balanceOf", [address]);
-  console.log("🏵 CrownTokenBalance:", CrownTokenBalance ? ethers.utils.formatEther(CrownTokenBalance) : "...");
-
   const UserYield = useContractReader(readContracts, "Farm", "crownYield", [address]);
-  console.log("🏵 UserYield:", UserYield ? ethers.utils.formatEther(UserYield) : "...");
 
-  useEffect(() => {
-    if (
-      DEBUG &&
-      mainnetProvider &&
-      address &&
-      selectedChainId &&
-      yourLocalBalance &&
-      readContracts &&
-      writeContracts &&
-      mainnetContracts
-    ) {
-      console.log("_____________________________________ Crown Capital Web3 _____________________________________");
-      console.log("🌎 mainnetProvider", mainnetProvider);
-      console.log("🏠 localChainId", localChainId);
-      console.log("👩‍💼 selected address:", address);
-      console.log("🕵🏻‍♂️ selectedChainId:", selectedChainId);
-      console.log("💵 yourLocalBalance", yourLocalBalance ? ethers.utils.formatEther(yourLocalBalance) : "...");
-      console.log("💵 yourMainnetBalance", yourMainnetBalance ? ethers.utils.formatEther(yourMainnetBalance) : "...");
-      console.log("📝 readContracts", readContracts);
-      console.log("🌍 DAI contract on mainnet:", mainnetContracts);
-      console.log("🔐 writeContracts", writeContracts);
-    }
-  }, [
+  useEffect(() => {}, [
     mainnetProvider,
     address,
     selectedChainId,
@@ -214,7 +176,7 @@ function App(props) {
   ]);
 
   let networkDisplay;
-  if (NETWORKCHECK && localChainId && selectedChainId && localChainId !== selectedChainId) {
+  if (NETWORK_CHECK && localChainId && selectedChainId && localChainId !== selectedChainId) {
     const networkSelected = NETWORK(selectedChainId);
     const networkLocal = NETWORK(localChainId);
     if (selectedChainId === 1337 && localChainId === 31337) {
@@ -351,30 +313,14 @@ function App(props) {
     );
   }
 
-  const stakeTokenEvents = useEventListener(readContracts, "Farm", "Stake", localProvider, 1);
-  console.log("📟 stakeTokensEvents:", stakeTokenEvents);
-  const unstakeTokenEvents = useEventListener(readContracts, "Farm", "Unstake", localProvider, 1);
-  console.log("📟 unstakeTokensEvents:", unstakeTokenEvents);
-
-  const [tokenBuyAmount, setTokenBuyAmount] = useState();
   const [amountToStake, setAmountToStake] = useState();
   const [amountToUnstake, setAmountToUnstake] = useState();
   const [isStakeAmountApproved, setIsStakeAmountApproved] = useState();
 
   useEffect(() => {
-    console.log("amountToStake", amountToStake);
     const amountToStakeBN = amountToStake && ethers.utils.parseEther("" + amountToStake);
-    console.log("amountToStakeBN", amountToStakeBN);
     setIsStakeAmountApproved(farmApproval && amountToStake && farmApproval.gte(amountToStakeBN));
   }, [amountToStake, readContracts]);
-  console.log("isStakeAmountApproved", isStakeAmountApproved);
-
-  const ethCostToPurchaseTokens =
-    tokenBuyAmount && tokensPerEth && ethers.utils.parseEther("" + tokenBuyAmount / parseFloat(tokensPerEth));
-  console.log("ethCostToPurchaseTokens:", ethCostToPurchaseTokens);
-
-  const [tokenSendToAddress, setTokenSendToAddress] = useState();
-  const [tokenSendAmount, setTokenSendAmount] = useState();
 
   const [buying, setBuying] = useState();
   const [claiming, setClaiming] = useState();
@@ -487,156 +433,126 @@ function App(props) {
   };
 
   return (
-    <div className="App" style={{ backgroundImage: "url(" + Background + ")" }}>
-      <Header />
-      {networkDisplay}
-      <BrowserRouter>
-        <Menu style={{ textAlign: "center" }} selectedKeys={[route]} mode="horizontal">
-          <Menu.Item key="/">
-            <Link
-              onClick={() => {
-                setRoute("/");
-              }}
-              to="/"
-            >
-              Crown Farm
-            </Link>
-          </Menu.Item>
-          <Menu.Item key="/contracts">
-            <Link
-              onClick={() => {
-                setRoute("/contracts");
-              }}
-              to="/contracts"
-            >
-              Debug Contracts
-            </Link>
-          </Menu.Item>
-        </Menu>
-
-        <Switch>
-          <Route exact path="/">
-            <div className="site-card-wrapper">
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Card title="Crown Tokens Owned">
-                    <div style={{ padding: 8 }}>
-                      <Balance balance={CrownTokenBalance} fontSize={64} />
-                    </div>
-                  </Card>
-                </Col>
-
-                <Col span={8}>
-                  <StakeCard />
-                </Col>
-
-                <Col span={8}>
-                  <Card title="Yield Generated">
-                    <div style={{ padding: 8 }}>
-                      <Balance balance={UserYield} fontSize={64} />
-                    </div>
-
-                    <div style={{ padding: 8 }}>
-                      <Button
-                        type={"primary"}
-                        loading={claiming}
-                        onClick={async () => {
-                          setClaiming(true);
-                          await tx(writeContracts.Farm.updateYield());
-                          setClaiming(false);
-                        }}
-                      >
-                        Update
-                      </Button>
-
-                      <Button
-                        type={"primary"}
-                        loading={claiming}
-                        onClick={async () => {
-                          setClaiming(true);
-                          await tx(writeContracts.Farm.withdrawYield());
-                          setClaiming(false);
-                        }}
-                      >
-                        Claim
-                      </Button>
-                    </div>
-                  </Card>
-                </Col>
-              </Row>
-
-              <div style={{ padding: 8, marginTop: 32 }}>
-                <div>Farm Token Balance:</div>
-                <Balance balance={farmTokenBalance} fontSize={64} />
-              </div>
-
-              <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
-                <div>Stake Token Events:</div>
-                <List
-                  dataSource={stakeTokenEvents}
-                  renderItem={item => {
-                    return (
-                      <List.Item key={item.blockNumber + item.blockHash}>
-                        {item.args[0]} staked
-                        <Balance balance={item.args[1]} />
-                        Tokens
-                      </List.Item>
-                    );
+    <Layout>
+      <Header>
+        <HeaderBar />
+      </Header>
+      <Content>
+        <div className="App" style={{ backgroundImage: "url(" + Background + ")" }}>
+          {networkDisplay}
+          <BrowserRouter>
+            <Menu style={{ textAlign: "center" }} selectedKeys={[route]} mode="horizontal">
+              <Menu.Item key="/">
+                <Link
+                  onClick={() => {
+                    setRoute("/");
                   }}
-                />
-              </div>
-
-              <div style={{ width: 500, margin: "auto", marginTop: 64 }}>
-                <div>Unstake Token Events:</div>
-                <List
-                  dataSource={unstakeTokenEvents}
-                  renderItem={item => {
-                    return (
-                      <List.Item key={item.blockNumber + item.blockHash}>
-                        {item.args[0]} unstaked
-                        <Balance balance={item.args[1]} />
-                        Tokens
-                      </List.Item>
-                    );
+                  to="/"
+                >
+                  Crown Farm
+                </Link>
+              </Menu.Item>
+              <Menu.Item key="/contracts">
+                <Link
+                  onClick={() => {
+                    setRoute("/contracts");
                   }}
-                />
-              </div>
-            </div>
-          </Route>
-          <Route path="/contracts">
-            <Contract
-              name="CrownToken"
-              signer={userSigner}
-              provider={localProvider}
-              address={address}
-              blockExplorer={blockExplorer}
-              contractConfig={contractConfig}
-            />
-            <Contract
-              name="Vault"
-              signer={userSigner}
-              provider={localProvider}
-              address={address}
-              blockExplorer={blockExplorer}
-              contractConfig={contractConfig}
-            />
-            <Contract
-              name="Farm"
-              signer={userSigner}
-              provider={localProvider}
-              address={address}
-              blockExplorer={blockExplorer}
-              contractConfig={contractConfig}
-            />
-          </Route>
-        </Switch>
-      </BrowserRouter>
+                  to="/contracts"
+                >
+                  Debug Contracts
+                </Link>
+              </Menu.Item>
+            </Menu>
 
-      <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>
-        <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-        {faucetHint}
-      </div>
-    </div>
+            <Switch>
+              <Route exact path="/">
+                <div className="site-card-wrapper">
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Card title="Crown Tokens Owned">
+                        <div style={{ padding: 8 }}>
+                          <Balance balance={CrownTokenBalance} fontSize={64} />
+                        </div>
+                      </Card>
+                    </Col>
+
+                    <Col span={8}>
+                      <StakeCard />
+                    </Col>
+
+                    <Col span={8}>
+                      <Card title="Yield Generated">
+                        <div style={{ padding: 8 }}>
+                          <Balance balance={UserYield} fontSize={64} />
+                        </div>
+
+                        <div style={{ padding: 8 }}>
+                          <Button
+                            type={"primary"}
+                            loading={claiming}
+                            onClick={async () => {
+                              setClaiming(true);
+                              await tx(writeContracts.Farm.updateYield());
+                              setClaiming(false);
+                            }}
+                          >
+                            Update
+                          </Button>
+
+                          <Button
+                            type={"primary"}
+                            loading={claiming}
+                            onClick={async () => {
+                              setClaiming(true);
+                              await tx(writeContracts.Farm.withdrawYield());
+                              setClaiming(false);
+                            }}
+                          >
+                            Claim
+                          </Button>
+                        </div>
+                      </Card>
+                    </Col>
+                  </Row>
+                </div>
+              </Route>
+              <Route path="/contracts">
+                <Contract
+                  name="CrownToken"
+                  signer={userSigner}
+                  provider={localProvider}
+                  address={address}
+                  blockExplorer={blockExplorer}
+                  contractConfig={contractConfig}
+                />
+                <Contract
+                  name="Vault"
+                  signer={userSigner}
+                  provider={localProvider}
+                  address={address}
+                  blockExplorer={blockExplorer}
+                  contractConfig={contractConfig}
+                />
+                <Contract
+                  name="Farm"
+                  signer={userSigner}
+                  provider={localProvider}
+                  address={address}
+                  blockExplorer={blockExplorer}
+                  contractConfig={contractConfig}
+                />
+              </Route>
+            </Switch>
+          </BrowserRouter>
+
+          <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 10 }}>
+            <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
+            {faucetHint}
+          </div>
+        </div>
+      </Content>
+      <Footer></Footer>
+    </Layout>
   );
 }
 
