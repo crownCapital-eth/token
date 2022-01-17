@@ -2,24 +2,37 @@ pragma solidity 0.8.4;
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "./CrownToken.sol";
 import "./Vault.sol";
 
-contract Farm is Ownable {
+/// @title Crown Capital Single LP Farm
+/// @author sters.eth
+/// @notice Contract stakes Crown tokens and pays yield in Crown Tokens
+contract Farm is Ownable, Pausable {
 
   string public name = "Crown Capital Farm";
   
+  /// @dev Array of active stakers
   address[] public stakers;
-  address public crownAddress;
 
+  /// @dev last time farm yield was updated
   uint256 public startTime;
-  uint256 public totalStaked;
-  uint256 public farmStartTime;
-  uint256 public percentOfEmssions;  
 
+  /// @dev the total amount of tokens staked in contract
+  uint256 public totalStaked;
+
+  /// @dev the time the farm was deployed
+  uint256 public farmStartTime; 
+
+  /// @dev addresses are mapped to a boolean indicating if the address is staking 
   mapping(address => bool) public isStaking;
-  mapping(address => uint256) public crownYield; // Yield to Claim
-  mapping(address => uint256) public stakingBalance; // Amount User is Staking
+  
+  /// @dev addresses are mapped to a yield available to claim by the address
+  mapping(address => uint256) public crownYield;
+
+  /// @dev addresses are mapped to the amount has Staked
+  mapping(address => uint256) public stakingBalance;
 
   event Stake(address indexed from, uint256 amount);
   event Unstake(address indexed from, uint256 amount);
@@ -28,17 +41,16 @@ contract Farm is Ownable {
   Vault vault;
   CrownToken crownToken;
   constructor(address tokenAddress, address vaultAddress) {
-    crownToken = CrownToken(tokenAddress);
-    crownAddress=tokenAddress;
+    crownToken = CrownToken(tokenAddress);    
     vault = Vault(vaultAddress);
-    percentOfEmssions=0;
     farmStartTime = block.timestamp;
     totalStaked=0;
   }
 
-  //TODO: ADD switch for canStake, canWithdraw, 
-
-  function stake(uint256 amountToStake) public {
+  /** @dev allows the user to stake crown tokens when the contract is not paused.
+  * @param amountToStake the amount of crown tokens the user wants to stake
+  */
+  function stake(uint256 amountToStake) public whenNotPaused {
     require(
       amountToStake > 0, 
       "You cannot stake zero tokens.");
@@ -47,17 +59,20 @@ contract Farm is Ownable {
     (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
     require(sent, "Failed to transfer tokens from user to Farm");
           
-    if(stakingBalance[msg.sender] == 0){
-        stakers.push(msg.sender);
+    if(isStaking[msg.sender] == false){
+      isStaking[msg.sender] = true;
+      stakers.push(msg.sender);
     }            
     stakingBalance[msg.sender] += amountToStake;
     totalStaked+=amountToStake;
-    isStaking[msg.sender] = true;
     startTime = block.timestamp;
     emit Stake(msg.sender, amountToStake);
   }
 
-  function unstake(uint256 amountToUnstake) public {
+  /** @dev allows the user to unstake crown tokens. Unstaking cannot be paused.
+  * @param amountToUnstake the amount of crown tokens the user wants to unstake
+  */
+  function unstake(uint256 amountToUnstake) public  {
     require(
       amountToUnstake > 0, 
       "You cannot unstake zero tokens.");    
@@ -73,14 +88,9 @@ contract Farm is Ownable {
     uint256 balTransfer = 0;
     balTransfer = amountToUnstake;
     stakingBalance[msg.sender] -= balTransfer;
-    totalStaked-= balTransfer;
-    
-    (bool sent) = crownToken.transfer(msg.sender, balTransfer);
-    require(sent, "Failed to withdraw Tokens"); 
+    totalStaked-= balTransfer;    
 
     if(stakingBalance[msg.sender] == 0){
-      isStaking[msg.sender] = false;
-
       if(stakers.length == 1){
         delete stakers; }      
       else {
@@ -89,18 +99,22 @@ contract Farm is Ownable {
           stakersIndex < stakers.length;
           stakersIndex++
           ) {
-              if(msg.sender == stakers[stakersIndex]){
-                removeAddress(stakersIndex);
-              }
+            if(msg.sender == stakers[stakersIndex]){
+              removeAddress(stakersIndex);
             }
+        }
       }
+    isStaking[msg.sender] = false;
     }
+
+    (bool sent) = crownToken.transfer(msg.sender, balTransfer);
+    require(sent, "Failed to withdraw tokens"); 
 
     emit Unstake(msg.sender, balTransfer);
   }
 
-  // Withdraw Yield
-  function withdrawYield() public {
+  /// @dev allows the user to withdraw crown tokens from yield when the farm is not paused.
+  function withdrawYield() public whenNotPaused {
       if (isStaking[msg.sender]){
         updateYield();
       }
@@ -122,7 +136,8 @@ contract Farm is Ownable {
     
     emit YieldWithdraw(msg.sender, toTransfer);
   }
-
+  
+  /// @dev updates the yield of each user. Sends crown to the farm.
   function updateYield() private {
     vault.sendToFarm();
     for (
@@ -138,6 +153,10 @@ contract Farm is Ownable {
     startTime = block.timestamp;
   }
 
+  /** @dev calculates a users total yield
+  *  @param staker address of staker to check
+  *  @return totalYield the total yield available to withdraw (when not paused)
+  */
   function calculateUserTotalYield(address staker) public view returns(uint256) {
       uint256 secondsPassed = calculateYieldTime() * 10**18;
       uint256 stakingPercent = userStakingPercent(staker);
@@ -147,6 +166,7 @@ contract Farm is Ownable {
       return totalYield;
   } 
 
+  /// @dev returns user staking percent of totalStaked
   function userStakingPercent(address staker) public view returns(uint256) {    
     uint256 stakingPercent = 0;
     if(isStaking[staker] == true){
@@ -155,7 +175,7 @@ contract Farm is Ownable {
     return stakingPercent;
   }
 
-
+  /// @dev returns seconds passed since yield last updated
   function calculateYieldTime() public view returns(uint256){
       uint256 totalTime = 0;
       uint256 end = block.timestamp;
@@ -163,24 +183,30 @@ contract Farm is Ownable {
       return totalTime;
   }
 
-  // Move the last element value into the index to be deleted
+  /// @dev deletes a staker from the stakers list
   function removeAddress(uint index) private {
     stakers[index] = stakers[stakers.length - 1];
     stakers.pop(); // Remove the last element
   }  
 
+  /// @dev returns array of addresses with active stakers 
   function getStakers() public view returns (address[] memory) {
       return stakers;
   }
 
+  /// @dev returns boolean of true if the user is actively staking
   function isUserStaking(address staker) public view returns(bool) {
     return isStaking[staker];
   }
 
+  /// @dev returns the amount of tokens staked by user
   function getUserBalance(address staker) public view returns(uint256) {
     return stakingBalance[staker];
   }
 
+  /** @dev returns the amount of yield the staker 
+  * @param staker address of user to request yield 
+  */
   function getCrownYield(address staker) public view returns(uint256) {
     return crownYield[staker];
   }
