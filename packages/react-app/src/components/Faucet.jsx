@@ -2,39 +2,9 @@ import { SendOutlined } from "@ant-design/icons";
 import { Button, Input, Tooltip } from "antd";
 import { useLookupAddress } from "eth-hooks/dapps/ens";
 import React, { useCallback, useEffect, useState } from "react";
-import Blockies from "react-blockies";
 import { Transactor } from "../helpers";
-import Wallet from "./Wallet";
 
 const { utils } = require("ethers");
-
-// improved a bit by converting address to ens if it exists
-// added option to directly input ens name
-// added placeholder option
-
-/*
-  ~ What it does? ~
-
-  Displays a local faucet to send ETH to given address, also wallet is provided
-
-  ~ How can I use? ~
-
-  <Faucet
-    price={price}
-    localProvider={localProvider}
-    ensProvider={mainnetProvider}
-    placeholder={"Send local faucet"}
-  />
-
-  ~ Features ~
-
-  - Provide price={price} of ether and convert between USD and ETH in a wallet
-  - Provide localProvider={localProvider} to be able to send ETH to given address
-  - Provide ensProvider={mainnetProvider} and your address will be replaced by ENS name
-              (ex. "0xa870" => "user.eth") or you can enter directly ENS name instead of address
-              works both in input field & wallet
-  - Provide placeholder="Send local faucet" value for the input
-*/
 
 export default function Faucet(props) {
   const [address, setAddress] = useState();
@@ -45,18 +15,12 @@ export default function Faucet(props) {
       if (props.localProvider) {
         const _faucetAddress = await props.localProvider.listAccounts();
         setFaucetAddress(_faucetAddress[0]);
-        //console.log(_faucetAddress);
       }
     };
     getFaucetAddress();
   }, [props.localProvider]);
 
-  let blockie;
-  if (address && typeof address.toLowerCase === "function") {
-    blockie = <Blockies seed={address.toLowerCase()} size={8} scale={4} />;
-  } else {
-    blockie = <div />;
-  }
+  let blockie = <div />;
 
   const ens = useLookupAddress(props.ensProvider, address);
 
@@ -105,13 +69,6 @@ export default function Faucet(props) {
               }}
               shape="circle"
               icon={<SendOutlined />}
-            />
-            <Wallet
-              color="#888888"
-              provider={props.localProvider}
-              ensProvider={props.ensProvider}
-              price={props.price}
-              address={faucetAddress}
             />
           </Tooltip>
         }

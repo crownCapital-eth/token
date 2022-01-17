@@ -6,7 +6,7 @@ var csso = require("gulp-csso");
 const autoprefixer = require("autoprefixer");
 const NpmImportPlugin = require("less-plugin-npm-import");
 
-gulp.task("less", function () {
+gulp.task("less", function() {
   const plugins = [autoprefixer()];
 
   return gulp
@@ -24,5 +24,5 @@ gulp.task("less", function () {
         debug: true,
       }),
     )
-    .pipe(gulp.dest("./public"));
+    .pipe(gulp.dest("."));
 });

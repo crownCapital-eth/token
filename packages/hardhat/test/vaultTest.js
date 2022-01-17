@@ -40,14 +40,14 @@ describe("Vault", () => {
 
     // Deploy Farm Contract
     const FarmContract = await ethers.getContractFactory('Farm');
-    farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address); 
+    farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address);
 
     // Transfer Tokens
     await tokenContract.transfer(vaultContract.address, ethers.utils.parseEther('75000000'));
     await tokenContract.transfer(owner.address, ethers.utils.parseEther('25000000'));
-    
+
     // Set the Farm Address
-    await vaultContract.initializeFarm(farmContract.address, 100); 
+    await vaultContract.initializeFarm(farmContract.address, 100);
     await vaultContract.setFarms();
 
     // Transfer Ownership
@@ -56,44 +56,44 @@ describe("Vault", () => {
 
     // Intitialize starting balances
     vaultTokensSupply = await tokenContract.balanceOf(vaultContract.address);
-    farmTokensSupply = await tokenContract.balanceOf(farmContract.address);    
+    farmTokensSupply = await tokenContract.balanceOf(farmContract.address);
     ownerTokenSupply  = await tokenContract.balanceOf(owner.address);
   });
 
-  describe('Anyone can call', () => {  
+  describe('Anyone can call', () => {
     it('calculateEmissions()', async () => {
       expect(await vaultContract.connect(addr1).calculateEmissions())
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('sendToFarm()', async () => {
       expect(await vaultContract.connect(addr1).sendToFarm())
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('calculatePerFarmEmissions()', async () => {
       expect(await vaultContract.connect(addr1).calculatePerFarmEmissions(farmContract.address))
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('getFarmTokens()', async () => {
       expect(await vaultContract.connect(addr1).getFarmTokens())
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('getFarmPercents()', async () => {
       expect(await vaultContract.connect(addr1).getFarmPercents())
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('getActiveFarmTokens()', async () => {
       expect(await vaultContract.connect(addr1).getActiveFarmTokens())
-      .to.be.ok;
+        .to.be.ok;
     });
 
     it('getActiveFarmPercents()', async () => {
       expect(await vaultContract.connect(addr1).getActiveFarmPercents(addr1.address))
-      .to.be.ok;
+        .to.be.ok;
     });
 
     // it('getPerFarmEmissions()', async () => {
@@ -102,9 +102,9 @@ describe("Vault", () => {
     // });
 
     it('isFarmActive()', async () => {
-        await expect(vaultContract.connect(addr1).isFarmActive(addr1.address))
+      await expect(vaultContract.connect(addr1).isFarmActive(addr1.address))
         .to.be.ok;
-      });
+    });
   });
 
   describe('Only Owner', () => {
@@ -145,10 +145,10 @@ describe("Vault", () => {
       expect(ethers.utils.formatEther(balance)).to.equal('75000000.0');
     });
 
-    it('Check Farm Address', async () => {    
-      const vaultFarmAddress = await vaultContract.activeFarmTokens(0);          
+    it('Check Farm Address', async () => {
+      const vaultFarmAddress = await vaultContract.activeFarmTokens(0);
       const farmAddress = await farmContract.address;
-      expect(vaultFarmAddress).to.equal(farmAddress);      
+      expect(vaultFarmAddress).to.equal(farmAddress);
     });
 
     it('Emissions rate', async () => {
@@ -165,38 +165,38 @@ describe("Vault", () => {
       await expect(
         vaultContract.initializeFarm(farmContract.address, 101))
         .to.be.revertedWith('Percent must be between 0 and 100');
-    }); 
+    });
 
     it('farmTokens starts empty', async () => {
       var farmTokens = await vaultContract.getFarmTokens()
       expect(farmTokens[0]).to.equal();
-    }); 
+    });
 
     it('farmPercents starts empty', async () => {
       var farmPercents = await vaultContract.getFarmPercents()
       expect(farmPercents[0]).to.equal();
-    }); 
+    });
 
-    it('initializeFarm: 1 Farm', async () => {      
+    it('initializeFarm: 1 Farm', async () => {
       await vaultContract.initializeFarm(addr1.address, 50);
       var farmTokens = await vaultContract.getFarmTokens()
       var farmPercents = await vaultContract.getFarmPercents()
       expect(farmTokens[0]).to.equal(addr1.address);
       expect(farmPercents[0]).to.equal(50);
-    }); 
-    
-    it('initializeFarm: 2 Farms', async () => {      
+    });
+
+    it('initializeFarm: 2 Farms', async () => {
       await vaultContract.initializeFarm(addr1.address, 50);
       await vaultContract.initializeFarm(addr2.address, 45);
       var farmTokens = await vaultContract.getFarmTokens()
       var farmPercents = await vaultContract.getFarmPercents()
-      expect(farmTokens[0]).to.equal(addr1.address);      
+      expect(farmTokens[0]).to.equal(addr1.address);
       expect(farmPercents[0]).to.equal(50);
       expect(farmTokens[1]).to.equal(addr2.address);
       expect(farmPercents[1]).to.equal(45);
-    }); 
+    });
 
-    it('resetInitialization empties farmTokens and farmPercents arrarys', async () => {      
+    it('resetInitialization empties farmTokens and farmPercents arrarys', async () => {
       await vaultContract.initializeFarm(addr1.address, 50);
       await vaultContract.initializeFarm(addr2.address, 45);
       await vaultContract.resetInitialization();
@@ -204,9 +204,9 @@ describe("Vault", () => {
       var farmPercents = await vaultContract.getFarmPercents()
       expect(farmTokens[0]).to.equal();
       expect(farmPercents[0]).to.equal();
-    }); 
+    });
 
-    it('Can intialize after reseting initialization', async () => {      
+    it('Can intialize after reseting initialization', async () => {
       await vaultContract.initializeFarm(addr1.address, 50);
       await vaultContract.initializeFarm(addr2.address, 45);
       await vaultContract.resetInitialization();
@@ -218,7 +218,7 @@ describe("Vault", () => {
     });
   });
 
-  describe('setFarms() method', () => {   
+  describe('setFarms() method', () => {
     it('setFarms reverted because no farms initialized', async () => {
       await expect(
         vaultContract.setFarms())
@@ -240,7 +240,7 @@ describe("Vault", () => {
         .to.be.revertedWith("Total Percent must be 100");
     });
 
-    it('setFarms: 1 Farm', async () => {      
+    it('setFarms: 1 Farm', async () => {
       // ACTION: Initialize 1 farm 100% and set the farm
       await vaultContract.initializeFarm(addr1.address, 100);
       await vaultContract.setFarms();
@@ -249,14 +249,14 @@ describe("Vault", () => {
       farmPercents = await vaultContract.getFarmPercents();
       expect(farmTokens[0]).to.equal();
       expect(farmPercents[0]).to.equal();
-      //CHECK: Active farm and percent 
+      //CHECK: Active farm and percent
       var activeFarms = await vaultContract.getActiveFarmTokens();
       var farm1Percent = await vaultContract.getActiveFarmPercents(addr1.address);
       expect(activeFarms[0]).to.equal(addr1.address);
       expect(farm1Percent).to.equal(BigNumber.from(100));
-    }); 
-    
-    it('setFarms: 2 Farms', async () => {      
+    });
+
+    it('setFarms: 2 Farms', async () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, 45);
       await vaultContract.initializeFarm(addr2.address, 55);
@@ -266,7 +266,7 @@ describe("Vault", () => {
       farmPercents = await vaultContract.getFarmPercents();
       expect(farmTokens[0]).to.equal();
       expect(farmPercents[0]).to.equal();
-      //CHECK: Active farm and percent 
+      //CHECK: Active farm and percent
       var activeFarms = await vaultContract.getActiveFarmTokens();
       var farm1Percent = await vaultContract.getActiveFarmPercents(addr1.address);
       var farm2Percent = await vaultContract.getActiveFarmPercents(addr2.address);
@@ -274,113 +274,113 @@ describe("Vault", () => {
       expect(activeFarms[1]).to.equal(addr2.address);
       expect(farm1Percent).to.equal(BigNumber.from(45));
       expect(farm2Percent).to.equal(BigNumber.from(55));
-    }); 
+    });
 
   });
 
 
   describe('Total Emissions: calculateEmissions()', () => {
-      it('1 Farm: Emissions does not exceed contract balance', async () => {
-        // ACTION: Set parameters
-        const initialBalance = await tokenContract.balanceOf(vaultContract.address);
-          // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const greaterThanSecondsIn5Years = 200000000;
-        // ACTION: Increase time
-        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-        await expect(vaultContract.calculateEmissions());         
-        // CHECK: emissions == initialBalance
-        var t1_emissions=await vaultContract.emissions();
-        expect(t1_emissions).to.equal(initialBalance);
-      });
+    it('1 Farm: Emissions does not exceed contract balance', async () => {
+      // ACTION: Set parameters
+      const initialBalance = await tokenContract.balanceOf(vaultContract.address);
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      const greaterThanSecondsIn5Years = 200000000;
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await expect(vaultContract.calculateEmissions());
+      // CHECK: emissions == initialBalance
+      var t1_emissions=await vaultContract.emissions();
+      expect(t1_emissions).to.equal(initialBalance);
+    });
 
-      it('1 Farm: Emissions does not exceed balance (call twice)', async () => {
-        // ACTION: Set parameters
-        const initialBalance = await tokenContract.balanceOf(vaultContract.address);
-          // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const greaterThanSecondsIn5Years = 200000000;
-        // ACTION: Increase time
-        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-        await expect(vaultContract.calculateEmissions());         
-        // CHECK: emissions == initialBalance
-        var t1_emissions=await vaultContract.emissions();
-        expect(t1_emissions).to.equal(initialBalance);
-        // ACTION: Increase time
-        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-        await expect(vaultContract.calculateEmissions()); 
-        // CHECK: emissions == initialBalance
-        var t1_emissions=await vaultContract.emissions();
-        expect(t1_emissions).to.equal(initialBalance);
-      });
+    it('1 Farm: Emissions does not exceed balance (call twice)', async () => {
+      // ACTION: Set parameters
+      const initialBalance = await tokenContract.balanceOf(vaultContract.address);
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      const greaterThanSecondsIn5Years = 200000000;
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await expect(vaultContract.calculateEmissions());
+      // CHECK: emissions == initialBalance
+      var t1_emissions=await vaultContract.emissions();
+      expect(t1_emissions).to.equal(initialBalance);
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await expect(vaultContract.calculateEmissions());
+      // CHECK: emissions == initialBalance
+      var t1_emissions=await vaultContract.emissions();
+      expect(t1_emissions).to.equal(initialBalance);
+    });
 
-      it('1 Farm: Emissions matches expected rate', async () => { 
-        // ACTION: Define Amounts
-        const tokensPerSecond = await vaultContract.tokensPerSecond();      
-        const t0 = await vaultContract.vaultStartTime();
-        // ACTION: Increase Time
-        const increaseTime = 3;
-        await ethers.provider.send("evm_increaseTime", [increaseTime]);
-        // ACTION: Update Emissions
-        await vaultContract.calculateEmissions();
-        // ACTION: Current time and seconds passed
-        var currentTime = await getCurrentTime()
-        const secondsPassed = currentTime.sub(t0);
-        // ACTION: Calculate Expected Emissions
-        const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
-        const t1_emissions=await vaultContract.emissions();
-        // CHECK: Emissions
-        expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
-        });
+    it('1 Farm: Emissions matches expected rate', async () => {
+      // ACTION: Define Amounts
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const t0 = await vaultContract.vaultStartTime();
+      // ACTION: Increase Time
+      const increaseTime = 3;
+      await ethers.provider.send("evm_increaseTime", [increaseTime]);
+      // ACTION: Update Emissions
+      await vaultContract.calculateEmissions();
+      // ACTION: Current time and seconds passed
+      var currentTime = await getCurrentTime()
+      const secondsPassed = currentTime.sub(t0);
+      // ACTION: Calculate Expected Emissions
+      const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
+      const t1_emissions=await vaultContract.emissions();
+      // CHECK: Emissions
+      expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
+    });
 
-      it('2 Farm: Emissions does not exceed contract balance', async () => {
-        // ACTION: Set parameters
-        const initialBalance = await tokenContract.balanceOf(vaultContract.address);
-        // ACTION: Initialize and set 2 farms
-        await vaultContract.initializeFarm(addr1.address, 45);
-        await vaultContract.initializeFarm(addr2.address, 55);
-        await vaultContract.setFarms();
-          // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
-        const greaterThanSecondsIn5Years = 200000000;
-        // ACTION: Increase time
-        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-        await expect(vaultContract.calculateEmissions());         
-        // CHECK: emissions == initialBalance
-        var t1_emissions=await vaultContract.emissions();
-        expect(t1_emissions).to.equal(initialBalance);
-      });  
-      
-      it('2 Farm: Emissions matches expected rate', async () => { 
-        // ACTION: Define Amounts
-        const tokensPerSecond = await vaultContract.tokensPerSecond();      
-        const t0 = await vaultContract.vaultStartTime();
-        // ACTION: Initialize and set 2 farms
-        await vaultContract.initializeFarm(addr1.address, 45);
-        await vaultContract.initializeFarm(addr2.address, 55);
-        await vaultContract.setFarms();
-        // ACTION: Increase Time
-        const increaseTime = 3;
-        await ethers.provider.send("evm_increaseTime", [increaseTime]);
-        // ACTION: Update Emissions
-        await vaultContract.calculateEmissions();
-        // ACTION: Current time and seconds passed
-        var currentTime = await getCurrentTime()
-        const secondsPassed = currentTime.sub(t0);
-        // ACTION: Calculate Expected Emissions
-        const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
-        const t1_emissions=await vaultContract.emissions();
-        // CHECK: Emissions
-        expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
-        });      
+    it('2 Farm: Emissions does not exceed contract balance', async () => {
+      // ACTION: Set parameters
+      const initialBalance = await tokenContract.balanceOf(vaultContract.address);
+      // ACTION: Initialize and set 2 farms
+      await vaultContract.initializeFarm(addr1.address, 45);
+      await vaultContract.initializeFarm(addr2.address, 55);
+      await vaultContract.setFarms();
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      const greaterThanSecondsIn5Years = 200000000;
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await expect(vaultContract.calculateEmissions());
+      // CHECK: emissions == initialBalance
+      var t1_emissions=await vaultContract.emissions();
+      expect(t1_emissions).to.equal(initialBalance);
+    });
+
+    it('2 Farm: Emissions matches expected rate', async () => {
+      // ACTION: Define Amounts
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
+      const t0 = await vaultContract.vaultStartTime();
+      // ACTION: Initialize and set 2 farms
+      await vaultContract.initializeFarm(addr1.address, 45);
+      await vaultContract.initializeFarm(addr2.address, 55);
+      await vaultContract.setFarms();
+      // ACTION: Increase Time
+      const increaseTime = 3;
+      await ethers.provider.send("evm_increaseTime", [increaseTime]);
+      // ACTION: Update Emissions
+      await vaultContract.calculateEmissions();
+      // ACTION: Current time and seconds passed
+      var currentTime = await getCurrentTime()
+      const secondsPassed = currentTime.sub(t0);
+      // ACTION: Calculate Expected Emissions
+      const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
+      const t1_emissions=await vaultContract.emissions();
+      // CHECK: Emissions
+      expect(t1_emissions).to.closeTo(expecteedEmissions, tolerance);
+    });
   });
 
   describe('Per Farm Emissions: calculatePerFarmEmissions()', () => {
     it('1 Farm: Per farm emissions does not exceed contract balance', async () => {
       // ACTION: Set parameters
       const initialBalance = await tokenContract.balanceOf(vaultContract.address);
-        // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
       const greaterThanSecondsIn5Years = 200000000;
       // ACTION: Increase time
       await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-      await expect(vaultContract.calculateEmissions());         
+      await expect(vaultContract.calculateEmissions());
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
@@ -392,11 +392,11 @@ describe("Vault", () => {
     it('1 Farm: 1 per farm emissions does not exceed balance (call twice)', async () => {
       // ACTION: Set parameters
       const initialBalance = await tokenContract.balanceOf(vaultContract.address);
-        // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
       const greaterThanSecondsIn5Years = 200000000;
       // ACTION: Increase time
       await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-      await expect(vaultContract.calculateEmissions());         
+      await expect(vaultContract.calculateEmissions());
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
@@ -405,16 +405,16 @@ describe("Vault", () => {
       expect(farm1Emissions).to.equal(initialBalance);
       // Increase time check again
       await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
-      await expect(vaultContract.calculateEmissions());  
+      await expect(vaultContract.calculateEmissions());
       // CHECK: Per farm emissions match expected percent
       var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.equal(initialBalance);
 
     });
 
-    it('1 Farm: Emissions matches expected rate', async () => { 
+    it('1 Farm: Emissions matches expected rate', async () => {
       // ACTION: Define Amounts
-      const tokensPerSecond = await vaultContract.tokensPerSecond();      
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
       const t0 = await vaultContract.vaultStartTime();
       // ACTION: Increase Time
       const increaseTime = 3;
@@ -432,7 +432,7 @@ describe("Vault", () => {
       // CHECK: Per farm emissions match expected percent
       var farm1Emissions = await vaultContract.calculatePerFarmEmissions(farmContract.address);
       expect(farm1Emissions).to.be.closeTo(expecteedEmissions, tolerance);
-      });
+    });
 
     it('2 Farm: Emissions does not exceed contract balance', async () => {
       // ACTION: Set parameters
@@ -443,12 +443,12 @@ describe("Vault", () => {
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
       await vaultContract.initializeFarm(addr2.address, farm2Percent);
       await vaultContract.setFarms();
-        // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
       const greaterThanSecondsIn5Years = 200000000;
       // ACTION: Increase time
       await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
       await ethers.provider.send('evm_mine');
-      await expect(vaultContract.calculateEmissions());         
+      await expect(vaultContract.calculateEmissions());
       // CHECK: emissions == initialBalance
       var t1_emissions=await vaultContract.emissions();
       expect(t1_emissions).to.equal(initialBalance);
@@ -457,13 +457,13 @@ describe("Vault", () => {
       var farm2Emissions = await vaultContract.calculatePerFarmEmissions(addr2.address);
       expect(farm1Emissions).to.equal(initialBalance.mul(farm1Percent).div(100));
       expect(farm2Emissions).to.equal(initialBalance.mul(farm2Percent).div(100));
-    });  
-    
-    it('2 Farm: Emissions matches expected rate', async () => { 
+    });
+
+    it('2 Farm: Emissions matches expected rate', async () => {
       // ACTION: Define Amounts
       const farm1Percent=45;
       const farm2Percent=55;
-      const tokensPerSecond = await vaultContract.tokensPerSecond();      
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
       const t0 = await vaultContract.vaultStartTime();
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
@@ -486,29 +486,29 @@ describe("Vault", () => {
       var farm1Emissions = await vaultContract.calculatePerFarmEmissions(addr1.address);
       var farm2Emissions = await vaultContract.calculatePerFarmEmissions(addr2.address);
       expect(farm1Emissions).to.be.closeTo(t1_emissions.mul(farm1Percent).div(100), tolerance);
-      expect(farm2Emissions).to.be.closeTo(t1_emissions.mul(farm2Percent).div(100), tolerance);      
-      });      
-});
+      expect(farm2Emissions).to.be.closeTo(t1_emissions.mul(farm2Percent).div(100), tolerance);
+    });
+  });
 
   describe('sendToFarm()', () => {
     it('1 Farm: Check Send Emissions to Farm', async () => {
       // ACTION: Define Amounts
-      const tokensPerSecond = await vaultContract.tokensPerSecond();      
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
       const t0 = await vaultContract.vaultStartTime();
       // ACTION: Increase Time
       const increaseTime = 3;
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       // ACTION: Send Emissions to farm
-     // await vaultContract.calculateEmissions();
-      await vaultContract.sendToFarm();  
-     
+      // await vaultContract.calculateEmissions();
+      await vaultContract.sendToFarm();
+
       // ACTION: Current time and seconds passed
       var currentTime = await getCurrentTime()
       const secondsPassed = currentTime.sub(t0);
       // ACTION: Calculate Expected Emissions
       const expecteedEmissions = secondsPassed.mul(tokensPerSecond);
       // CHECK: Per farm emissions match expected percent
-      const farmBalance = await tokenContract.balanceOf(farmContract.address);      
+      const farmBalance = await tokenContract.balanceOf(farmContract.address);
       expect(farmBalance).to.be.closeTo(expecteedEmissions, tolerance);
     });
 
@@ -516,7 +516,7 @@ describe("Vault", () => {
       // ACTION: Define Amounts
       const farm1Percent=45;
       const farm2Percent=55;
-      const tokensPerSecond = await vaultContract.tokensPerSecond();      
+      const tokensPerSecond = await vaultContract.tokensPerSecond();
       const t0 = await vaultContract.vaultStartTime();
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
@@ -527,8 +527,8 @@ describe("Vault", () => {
       await ethers.provider.send("evm_increaseTime", [increaseTime]);
       await ethers.provider.send('evm_mine');
       // ACTION: Send Emissions to farm
-      await vaultContract.sendToFarm();  
-     
+      await vaultContract.sendToFarm();
+
       // CHECK: Per farm emissions match expected percent
       var currentTime = await getCurrentTime()
       const secondsPassed = currentTime.sub(t0);
@@ -544,26 +544,26 @@ describe("Vault", () => {
 
 
   describe('killActiveFarms()', () => {
-    it('Check Farm Address', async () => {   
-      // ACTION: Kill Active Farms 
+    it('Check Farm Address', async () => {
+      // ACTION: Kill Active Farms
       await vaultContract.killActiveFarms();
       // CHECK: No active addresses
       const farmAddresses = await vaultContract.getActiveFarmTokens();
       expect(farmAddresses[0]).to.equal();
     });
-  });  
+  });
 
   describe('isFarmActive()', () => {
-    it('Check Farm Address is Active', async () => {   
+    it('Check Farm Address is Active', async () => {
       // CHECK: Farm is active
       const active = await vaultContract.isFarmActive(farmContract.address);
       expect(active).to.equal(true);
     });
-    it('Check Farm Address is not Active', async () => {   
-        // CHECK: Address is not active
-        const active = await vaultContract.isFarmActive(owner.address);
-        expect(active).to.equal(false);
-      });
-  });   
+    it('Check Farm Address is not Active', async () => {
+      // CHECK: Address is not active
+      const active = await vaultContract.isFarmActive(owner.address);
+      expect(active).to.equal(false);
+    });
+  });
 
 });
