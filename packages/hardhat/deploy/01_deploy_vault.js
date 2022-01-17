@@ -39,7 +39,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     ethers.utils.parseEther("25000000")
   );
   console.log("\n    ✅ confirming transfer...\n");
-  await sleep(15000); // wait 15 seconds for transaction to propagate  
+  await sleep(15000); // wait 15 seconds for transaction to propagate
 
 };
 

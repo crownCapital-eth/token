@@ -4,9 +4,6 @@ import { BLOCKNATIVE_DAPPID } from "../constants";
 
 const { ethers } = require("ethers");
 
-// this should probably just be renamed to "notifier"
-// it is basically just a wrapper around BlockNative's wonderful Notify.js
-// https://docs.blocknative.com/notify
 const callbacks = {};
 
 const DEBUG = true;
@@ -76,7 +73,6 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           result = await signer.sendTransaction(tx);
         }
         if (DEBUG) console.log("RESULT:", result);
-        // console.log("Notify", notify);
 
         if (callback) {
           callbacks[result.hash] = callback;
