@@ -51,10 +51,12 @@ function App() {
       <Content>
         <Title level={2}>Crown Capital Staking</Title>
         <Space>
-          <Button type={"primary"} shape="round" onClick={async () => {}}>
+          <Button type={"primary"} shape="round" onClick={async () => {
+          }}>
             Buy Crown
           </Button>
-          <Button type={"primary"} shape="round" onClick={async () => {}}>
+          <Button type={"primary"} shape="round" onClick={async () => {
+          }}>
             Import Crown Token
           </Button>
         </Space>
