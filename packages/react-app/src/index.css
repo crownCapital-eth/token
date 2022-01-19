@@ -4,7 +4,7 @@
 
 .App {
     min-height: 100%;
-    padding: 30px;
+    padding: 5% 30px 30px;
 }
 
 .ant-layout-header {
@@ -35,6 +35,15 @@ a:hover {
     justify-content: center
 }
 
+.ant-card {
+    background: #f2f3f5;
+}
+
 .ant-card-small {
     height: 20vh;
+}
+
+h2.ant-typography {
+    color: #f2f3f5;
+    margin-top: 5%;
 }
