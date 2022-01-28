@@ -35,7 +35,7 @@ function mnemonic() {
   } catch (e) {
     if (defaultNetwork !== "localhost") {
       console.log(
-        "☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`."
+        "☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`.",
       );
     }
   }
@@ -58,71 +58,6 @@ module.exports = {
         (you can put in a mnemonic here to set the deployer locally)
 
       */
-    },
-    rinkeby: {
-      url: "https://rinkeby.infura.io/v3/44adf3113ef74661969e3d5418d56c59", // <---- YOUR INFURA ID! (or it won't work)
-      //    url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/eth/rinkeby", // <---- YOUR MORALIS ID! (not limited to infura)
-      gasPrice: 4000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    kovan: {
-      url: "https://kovan.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", // <---- YOUR INFURA ID! (or it won't work)
-      //    url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/eth/kovan", // <---- YOUR MORALIS ID! (not limited to infura)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    mainnet: {
-      url: "https://mainnet.infura.io/v3/44adf3113ef74661969e3d5418d56c59", // <---- YOUR INFURA ID! (or it won't work)
-      //      url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXXXX/eth/mainnet", // <---- YOUR MORALIS ID! (not limited to infura)
-      gasPrice: mainnetGwei * 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    ropsten: {
-      url: "https://ropsten.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", // <---- YOUR INFURA ID! (or it won't work)
-      //      url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXXXX/eth/ropsten",// <---- YOUR MORALIS ID! (not limited to infura)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    goerli: {
-      url: "https://goerli.infura.io/v3/460f40a260564ac4a4f4b3fffb032dad", // <---- YOUR INFURA ID! (or it won't work)
-      //      url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXXXX/eth/goerli", // <---- YOUR MORALIS ID! (not limited to infura)
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    xdai: {
-      url: "https://rpc.xdaichain.com/",
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    polygon: {
-      url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXx/polygon/mainnet", // <---- YOUR MORALIS ID! (not limited to infura)
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    polytest: {
-      url: "https://speedy-nodes-nyc.moralis.io/XXXXXXXXXXXXXXXXXXXXXXX/polygon/mumbai", // <---- YOUR MORALIS ID! (not limited to infura)
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    matic: {
-      url: "https://rpc-mainnet.maticvigil.com/",
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
     },
     rinkebyArbitrum: {
       url: "https://rinkeby.arbitrum.io/rpc",
@@ -152,78 +87,6 @@ module.exports = {
       },
       companionNetworks: {
         l2: "localArbitrum",
-      },
-    },
-    kovanOptimism: {
-      url: "https://kovan.optimism.io",
-      gasPrice: 0,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-      ovm: true,
-      companionNetworks: {
-        l1: "kovan",
-      },
-    },
-    localOptimism: {
-      url: "http://localhost:8545",
-      gasPrice: 0,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-      ovm: true,
-      companionNetworks: {
-        l1: "localOptimismL1",
-      },
-    },
-    localOptimismL1: {
-      url: "http://localhost:9545",
-      gasPrice: 0,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-      companionNetworks: {
-        l2: "localOptimism",
-      },
-    },
-    localAvalanche: {
-      url: "http://localhost:9650/ext/bc/C/rpc",
-      gasPrice: 225000000000,
-      chainId: 43112,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    fujiAvalanche: {
-      url: "https://api.avax-test.network/ext/bc/C/rpc",
-      gasPrice: 225000000000,
-      chainId: 43113,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    mainnetAvalanche: {
-      url: "https://api.avax.network/ext/bc/C/rpc",
-      gasPrice: 225000000000,
-      chainId: 43114,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    testnetHarmony: {
-      url: "https://api.s0.b.hmny.io",
-      gasPrice: 1000000000,
-      chainId: 1666700000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
-    },
-    mainnetHarmony: {
-      url: "https://api.harmony.one",
-      gasPrice: 1000000000,
-      chainId: 1666600000,
-      accounts: {
-        mnemonic: mnemonic(),
       },
     },
   },
@@ -280,7 +143,7 @@ task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
 task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
   .addOptionalParam(
     "amount",
-    "Amount of ETH to send to wallet after generating"
+    "Amount of ETH to send to wallet after generating",
   )
   .addOptionalParam("url", "URL to add pk to")
   .setAction(async (taskArgs, { network, ethers }) => {
@@ -307,7 +170,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
     // IF NOT SEND USING LOCAL HARDHAT NODE:
     if (localDeployerMnemonic) {
       let deployerWallet = new ethers.Wallet.fromMnemonic(
-        localDeployerMnemonic
+        localDeployerMnemonic,
       );
       deployerWallet = deployerWallet.connect(ethers.provider);
       console.log(
@@ -315,7 +178,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
         amount +
         " ETH to " +
         randomWallet.address +
-        " using deployer account"
+        " using deployer account",
       );
       const sendresult = await deployerWallet.sendTransaction(tx);
       console.log("\n" + url + "/pk#" + privateKey + "\n");
@@ -325,7 +188,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
         amount +
         " ETH to " +
         randomWallet.address +
-        " using local node"
+        " using local node",
       );
       console.log("\n" + url + "/pk#" + privateKey + "\n");
       return send(ethers.provider.getSigner(), tx);
@@ -356,20 +219,20 @@ task(
     console.log(
       "🔐 Account Generated as " +
       address +
-      " and set as mnemonic in packages/hardhat"
+      " and set as mnemonic in packages/hardhat",
     );
     console.log(
-      "💬 Use 'yarn run account' to get more information about the deployment account."
+      "💬 Use 'yarn run account' to get more information about the deployment account.",
     );
 
     fs.writeFileSync("./" + address + ".txt", mnemonic.toString());
     fs.writeFileSync("./mnemonic.txt", mnemonic.toString());
-  }
+  },
 );
 
 task(
   "mineContractAddress",
-  "Looks for a deployer account that will give leading zeros"
+  "Looks for a deployer account that will give leading zeros",
 )
   .addParam("searchFor", "String to search for")
   .setAction(async (taskArgs, { network, ethers }) => {
@@ -416,19 +279,19 @@ task(
     console.log(
       "⛏  Account Mined as " +
       address +
-      " and set as mnemonic in packages/hardhat"
+      " and set as mnemonic in packages/hardhat",
     );
     console.log(
       "📜 This will create the first contract: " +
-      chalk.magenta("0x" + contract_address)
+      chalk.magenta("0x" + contract_address),
     );
     console.log(
-      "💬 Use 'yarn run account' to get more information about the deployment account."
+      "💬 Use 'yarn run account' to get more information about the deployment account.",
     );
 
     fs.writeFileSync(
       "./" + address + "_produces" + contract_address + ".txt",
-      mnemonic.toString()
+      mnemonic.toString(),
     );
     fs.writeFileSync("./mnemonic.txt", mnemonic.toString());
   });
@@ -462,13 +325,13 @@ task(
       // console.log(config.networks[n],n)
       try {
         const provider = new ethers.providers.JsonRpcProvider(
-          config.networks[n].url
+          config.networks[n].url,
         );
         const balance = await provider.getBalance(address);
         console.log(" -- " + n + " --  -- -- 📡 ");
         console.log("   balance: " + ethers.utils.formatEther(balance));
         console.log(
-          "   nonce: " + (await provider.getTransactionCount(address))
+          "   nonce: " + (await provider.getTransactionCount(address)),
         );
       } catch (e) {
         if (DEBUG) {
@@ -476,7 +339,7 @@ task(
         }
       }
     }
-  }
+  },
 );
 
 async function addr(ethers, addr) {
@@ -504,7 +367,7 @@ task("balance", "Prints an account's balance")
   .addPositionalParam("account", "The account's address")
   .setAction(async (taskArgs, { ethers }) => {
     const balance = await ethers.provider.getBalance(
-      await addr(ethers, taskArgs.account)
+      await addr(ethers, taskArgs.account),
     );
     console.log(formatUnits(balance, "ether"), "ETH");
   });
@@ -543,12 +406,12 @@ task("send", "Send ETH")
       to,
       value: parseUnits(
         taskArgs.amount ? taskArgs.amount : "0",
-        "ether"
+        "ether",
       ).toHexString(),
       nonce: await fromSigner.getTransactionCount(),
       gasPrice: parseUnits(
         taskArgs.gasPrice ? taskArgs.gasPrice : "1.001",
-        "gwei"
+        "gwei",
       ).toHexString(),
       gasLimit: taskArgs.gasLimit ? taskArgs.gasLimit : 24000,
       chainId: network.config.chainId,

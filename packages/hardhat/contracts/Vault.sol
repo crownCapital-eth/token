@@ -31,14 +31,14 @@ contract Vault is Ownable, Pausable {
     uint256 public emissions;
 
     /// @dev The Vault emissions rate in seconds
-    uint256 public tokensPerSecond= 475646879756468797;
-    uint256 public secondsPerToken=2102400000000000000;
+    uint256 public tokensPerSecond = 475646879756468797;
+    uint256 public secondsPerToken = 2102400000000000000;
 
     /// @dev the time the vault was deployed
     uint256 public vaultStartTime;
 
     /// @dev the seconds in five years
-    uint256 public secondsIn5Years=157680000;
+    uint256 public secondsIn5Years = 157680000;
 
     event EmissionsSent(address farmAddress, uint256 amount);
     event UpdateEmissions(uint256 emiss);
@@ -46,33 +46,33 @@ contract Vault is Ownable, Pausable {
     CrownToken crownToken;
     constructor(address tokenAddress) {
         crownToken = CrownToken(tokenAddress);
-        vaultStartTime=block.timestamp;
-        lastEmissionsTime=block.timestamp;
-        emissions=0;
+        vaultStartTime = block.timestamp;
+        lastEmissionsTime = block.timestamp;
+        emissions = 0;
     }
 
     /** @dev Owner may intialize a new farm or set of farms 1 at a time.
     * @param tokenAddress address of farm.
     * @param percent 0 to 100 percent of the emssions which do to specified farm.
-    */  
-  function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner {
-    require(
-      percent>=0 && percent<=100,
-      "Percent must be between 0 and 100"
-    );
-    farmTokens.push(tokenAddress);
-    farmPercents.push(percent);    
-  }
+    */
+    function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner {
+        require(
+            percent >= 0 && percent <= 100,
+            "Percent must be between 0 and 100"
+        );
+        farmTokens.push(tokenAddress);
+        farmPercents.push(percent);
+    }
 
-  /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
-  function resetInitialization() public onlyOwner {
-    delete farmTokens;
-    delete farmPercents;
-  }
+    /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
+    function resetInitialization() public onlyOwner {
+        delete farmTokens;
+        delete farmPercents;
+    }
 
-  /** @dev used to set the active farms following intialization
+    /** @dev used to set the active farms following intialization
    */
-    function setFarms() public onlyOwner{
+    function setFarms() public onlyOwner {
         require(
             farmTokens.length >= 1,
             "To set farm at least 1 farm must be initialized"
@@ -82,9 +82,9 @@ contract Vault is Ownable, Pausable {
             farmTokens.length == farmPercents.length,
             "Addresses and percents must be of equal length"
         );
-        uint256 totalPercent=0;
-        totalPercent=calculateTotalPercent();
-        require(totalPercent==100, "Total Percent must be 100");
+        uint256 totalPercent = 0;
+        totalPercent = calculateTotalPercent();
+        require(totalPercent == 100, "Total Percent must be 100");
         killActiveFarms();
         // SET NEW FARMS
         for (
@@ -93,7 +93,7 @@ contract Vault is Ownable, Pausable {
             idx++
         ) {
             address addr = farmTokens[idx];
-            activeFarmPercents[addr]=farmPercents[idx];
+            activeFarmPercents[addr] = farmPercents[idx];
             activeFarmTokens.push(addr);
         }
         resetInitialization();
@@ -107,7 +107,7 @@ contract Vault is Ownable, Pausable {
             idx < farmPercents.length;
             idx++
         ) {
-            totalPercent+=farmPercents[idx];
+            totalPercent += farmPercents[idx];
         }
         return totalPercent;
     }
@@ -123,7 +123,7 @@ contract Vault is Ownable, Pausable {
             idx++
         ) {
             address addr = activeFarmTokens[idx];
-            activeFarmPercents[addr]=0;
+            activeFarmPercents[addr] = 0;
         }
         delete activeFarmTokens;
     }
@@ -132,7 +132,7 @@ contract Vault is Ownable, Pausable {
     function sendToFarm() public whenNotPaused {
         calculateEmissions();
         require(
-            emissions > 0 ,
+            emissions > 0,
             "Nothing to withdraw"
         );
 
@@ -152,29 +152,29 @@ contract Vault is Ownable, Pausable {
             uint256 toTransfer = 0;
             address farmAddr = activeFarmTokens[idx];
 
-            toTransfer =calculatePerFarmEmissions(farmAddr);
-            amountToFarms-=toTransfer;
+            toTransfer = calculatePerFarmEmissions(farmAddr);
+            amountToFarms -= toTransfer;
             (bool sent) = crownToken.transfer(farmAddr, toTransfer);
             require(sent, "Failed to withdraw Tokens");
 
             emit EmissionsSent(farmAddr, toTransfer);
         }
-        emissions=0;
+        emissions = 0;
     }
 
     /// @dev Calculates the total emissions
     function calculateEmissions() public {
-        uint256 t0=0;
-        t0=lastEmissionsTime;
+        uint256 t0 = 0;
+        t0 = lastEmissionsTime;
         uint256 end = block.timestamp;
-        lastEmissionsTime=end;
-        uint256 secondsPassed = (end - t0) * 10**18;
-        emissions += (secondsPassed * 10**18)/ secondsPerToken;
+        lastEmissionsTime = end;
+        uint256 secondsPassed = (end - t0) * 10 ** 18;
+        emissions += (secondsPassed * 10 ** 18) / secondsPerToken;
 
         uint256 available = 0;
         available = crownToken.balanceOf(address(this));
-        if(emissions >  available){
-            emissions=available;
+        if (emissions > available) {
+            emissions = available;
         }
         emit UpdateEmissions(emissions);
     }
@@ -198,9 +198,9 @@ contract Vault is Ownable, Pausable {
   * @param farmAddr farm address to query
   * @return the percentage of current emmissions going to farmAddr
   */
-    function getActiveFarmPercents(address farmAddr) public view returns(uint256) {
+    function getActiveFarmPercents(address farmAddr) public view returns (uint256) {
         uint256 percent = 0;
-        if(isFarmActive(farmAddr)){
+        if (isFarmActive(farmAddr)) {
             percent = activeFarmPercents[farmAddr];
         }
         return percent;
@@ -211,11 +211,11 @@ contract Vault is Ownable, Pausable {
   * @param farmAddr farm address to query
   * @return seconds per token the farm is currently generating
   */
-    function getFarmSecondsPerToken(address farmAddr) public view returns(uint256) {
+    function getFarmSecondsPerToken(address farmAddr) public view returns (uint256) {
         uint256 farmSecondsPerToken = 0;
-        if(isFarmActive(farmAddr)){
+        if (isFarmActive(farmAddr)) {
             uint256 farmPercent = getActiveFarmPercents(farmAddr);
-            farmSecondsPerToken = (secondsPerToken*100)/farmPercent;
+            farmSecondsPerToken = (secondsPerToken * 100) / farmPercent;
         }
         return farmSecondsPerToken;
     }
@@ -225,9 +225,9 @@ contract Vault is Ownable, Pausable {
   * @param farmAddr farm address to query
   * @return perFarmEmission the Emissions going to farmAddr
   */
-    function calculatePerFarmEmissions(address farmAddr) public view returns(uint256) {
+    function calculatePerFarmEmissions(address farmAddr) public view returns (uint256) {
         uint256 farmPercent = activeFarmPercents[farmAddr];
-        uint256 perFarmEmission= (emissions * farmPercent)/100;
+        uint256 perFarmEmission = (emissions * farmPercent) / 100;
 
         return perFarmEmission;
     }
@@ -236,7 +236,7 @@ contract Vault is Ownable, Pausable {
   * @param farmAddr farm address to query
   * @return isActive - true if passed address is an active farm else false.
   */
-    function isFarmActive(address farmAddr) public view returns(bool) {
+    function isFarmActive(address farmAddr) public view returns (bool) {
         address addr;
         bool isActive = false;
 
@@ -246,7 +246,7 @@ contract Vault is Ownable, Pausable {
             idx++
         ) {
             addr = activeFarmTokens[idx];
-            if(addr == farmAddr){isActive=true;}
+            if (addr == farmAddr) {isActive = true;}
         }
         return isActive;
     }

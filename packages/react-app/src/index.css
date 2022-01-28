@@ -1,11 +1,49 @@
-body {
+.body {
     margin: 0;
 }
 
-code {
-    font-family: 'Chakra Petch', sans-serif;
+.App {
+    min-height: 100%;
+    padding: 5% 30px 30px;
 }
 
-.site-card-wrapper {
-    padding: 30px;
+.ant-layout-header {
+    background-color: #17161b;
+}
+
+.ant-layout-content {
+    background-color: #241d2f;
+}
+
+.ant-layout-footer {
+    background-color: #17161b;
+}
+
+a:hover {
+    color: white;
+}
+
+.ant-card-head {
+    text-align: center;
+}
+
+.ant-layout-content {
+    text-align: center;
+}
+
+.ant-tabs-nav-wrap {
+    justify-content: center
+}
+
+.ant-card {
+    background: #f2f3f5;
+}
+
+.ant-card-small {
+    height: 20vh;
+}
+
+h2.ant-typography {
+    color: #f2f3f5;
+    margin-top: 5%;
 }

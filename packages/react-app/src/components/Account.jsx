@@ -25,7 +25,7 @@ export default function Account({ web3Modal, loadWeb3Modal, logoutOfWeb3Modal })
           size="large"
           onClick={loadWeb3Modal}
         >
-          connect
+          Connect Wallet
         </Button>,
       );
     }
