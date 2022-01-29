@@ -56,7 +56,7 @@ contract Vault is Ownable, Pausable {
     * @param tokenAddress address of farm.
     * @param percent 0 to 100 percent of the emssions which do to specified farm.
     */  
-  function initializeFarm(address tokenAddress, uint256 percent) public onlyOwner {
+  function initializeFarm(address tokenAddress, uint256 percent) external onlyOwner {
     require(
       percent>=0 && percent<=100,
       "Percent must be between 0 and 100"
@@ -74,7 +74,7 @@ contract Vault is Ownable, Pausable {
 
   /** @dev used to set the active farms following intialization
    */
-    function setFarms() public onlyOwner{
+    function setFarms() external onlyOwner{
         require(
             farmTokens.length >= 1,
             "To set farm at least 1 farm must be initialized"
@@ -131,7 +131,7 @@ contract Vault is Ownable, Pausable {
     }
 
     /// @dev sends all emissions to farms based on percentage of total emissions
-    function sendToFarm() public whenNotPaused {
+    function sendToFarm() external whenNotPaused {
         calculateEmissions();
         require(
             emissions > 0 ,
@@ -182,17 +182,17 @@ contract Vault is Ownable, Pausable {
     }
 
     /// @return array of initialized farm addresses
-    function getFarmTokens() public view returns (address[] memory) {
+    function getFarmTokens() external view returns (address[] memory) {
         return farmTokens;
     }
 
     /// @return array of initialized farm percentages
-    function getFarmPercents() public view returns (uint256[] memory) {
+    function getFarmPercents() external view returns (uint256[] memory) {
         return farmPercents;
     }
 
     /// @return array of active farm tokens
-    function getActiveFarmTokens() public view returns (address[] memory) {
+    function getActiveFarmTokens() external view returns (address[] memory) {
         return activeFarmTokens;
     }
 
@@ -213,7 +213,7 @@ contract Vault is Ownable, Pausable {
     * @param farmAddr farm address to query
     * @return seconds per token the farm is currently generating
     */
-    function getFarmSecondsPerToken(address farmAddr) public view returns(uint256) {
+    function getFarmSecondsPerToken(address farmAddr) external view returns(uint256) {
         uint256 farmSecondsPerToken = 0;
         if(isFarmActive(farmAddr)){
             uint256 farmPercent = getActiveFarmPercents(farmAddr);

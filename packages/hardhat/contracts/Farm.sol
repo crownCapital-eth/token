@@ -12,7 +12,7 @@ import "./Vault.sol";
 /// @notice Contract stakes Crown tokens and pays yield in Crown Tokens
 contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
-    string public constant  name = "Crown Capital Farm";
+    string public constant name = "Crown Capital Farm";
 
     /// @dev Array of active stakers
     address[] public stakers;
@@ -52,7 +52,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     /** @dev allows the user to stake crown tokens when the contract is not paused.
   * @param amountToStake the amount of crown tokens the user wants to stake
   */
-    function stake(uint256 amountToStake) public whenNotPaused nonReentrant {
+    function stake(uint256 amountToStake) external whenNotPaused nonReentrant {
         require(
             amountToStake > 0,
             "You cannot stake zero tokens.");
@@ -74,7 +74,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     /** @dev allows the user to unstake crown tokens. Unstaking cannot be paused.
     * @param amountToUnstake the amount of crown tokens the user wants to unstake
     */
-    function unstake(uint256 amountToUnstake) public nonReentrant {
+    function unstake(uint256 amountToUnstake) external nonReentrant {
         require(
             amountToUnstake > 0,
             "You cannot unstake zero tokens.");
@@ -116,7 +116,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /// @dev allows the user to withdraw crown tokens from yield when the farm is not paused.
-    function withdrawYield() public whenNotPaused nonReentrant {
+    function withdrawYield() external whenNotPaused nonReentrant {
         if (isStaking[msg.sender]){
             updateYield();
         }
@@ -197,19 +197,19 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /// @dev returns boolean of true if the user is actively staking
-    function isUserStaking(address staker) public view returns(bool) {
+    function isUserStaking(address staker) external view returns(bool) {
         return isStaking[staker];
     }
 
     /// @dev returns the amount of tokens staked by user
-    function getUserBalance(address staker) public view returns(uint256) {
+    function getUserBalance(address staker) external view returns(uint256) {
         return stakingBalance[staker];
     }
 
     /** @dev returns the amount of yield the staker
   * @param staker address of user to request yield
   */
-    function getCrownYield(address staker) public view returns(uint256) {
+    function getCrownYield(address staker) external view returns(uint256) {
         return crownYield[staker];
     }
 
