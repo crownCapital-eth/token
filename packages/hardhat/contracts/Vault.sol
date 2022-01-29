@@ -10,7 +10,7 @@ import "./CrownToken.sol";
 /// @notice Contract sends token emissions to farms over a 5 year period
 contract Vault is Ownable, Pausable {
 
-    string public name = "Crown Capital Vault";
+    string public constant name = "Crown Capital Vault";
 
     /// @dev Array of initialized tokens to set as farm
     address[] public farmTokens;
@@ -31,8 +31,8 @@ contract Vault is Ownable, Pausable {
     uint256 public emissions;
 
     /// @dev The Vault emissions rate in seconds
-    uint256 public tokensPerSecond= 475646879756468797;
-    uint256 public secondsPerToken=2102400000000000000;
+    uint256 public constant tokensPerSecond= 475646879756468797;
+    uint256 public constant secondsPerToken=2102400000000000000;
 
     /// @dev the time the vault was deployed
     uint256 public vaultStartTime;

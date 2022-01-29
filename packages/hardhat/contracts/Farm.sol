@@ -12,7 +12,7 @@ import "./Vault.sol";
 /// @notice Contract stakes Crown tokens and pays yield in Crown Tokens
 contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
-    string public name = "Crown Capital Farm";
+    string public constant  name = "Crown Capital Farm";
 
     /// @dev Array of active stakers
     address[] public stakers;
