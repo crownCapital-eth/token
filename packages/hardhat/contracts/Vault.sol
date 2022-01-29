@@ -45,10 +45,11 @@ contract Vault is Ownable, Pausable {
 
     CrownToken crownToken;
     constructor(address tokenAddress) {
-        crownToken = CrownToken(tokenAddress);
-        vaultStartTime=block.timestamp;
-        lastEmissionsTime=block.timestamp;
-        emissions=0;
+    require(tokenAddress != address(0), 'address can not be zero address');
+    crownToken = CrownToken(tokenAddress);
+    vaultStartTime=block.timestamp;
+    lastEmissionsTime=block.timestamp;
+    emissions=0;
     }
 
     /** @dev Owner may intialize a new farm or set of farms 1 at a time.
@@ -60,6 +61,7 @@ contract Vault is Ownable, Pausable {
       percent>=0 && percent<=100,
       "Percent must be between 0 and 100"
     );
+    require(tokenAddress != address(0), 'address can not be zero address');
     farmTokens.push(tokenAddress);
     farmPercents.push(percent);    
   }
@@ -195,9 +197,9 @@ contract Vault is Ownable, Pausable {
     }
 
     /** @dev returns the percentange of current emissions an address recieves
-  * @param farmAddr farm address to query
-  * @return the percentage of current emmissions going to farmAddr
-  */
+    * @param farmAddr farm address to query
+    * @return the percentage of current emmissions going to farmAddr
+    */
     function getActiveFarmPercents(address farmAddr) public view returns(uint256) {
         uint256 percent = 0;
         if(isFarmActive(farmAddr)){
@@ -207,10 +209,10 @@ contract Vault is Ownable, Pausable {
     }
 
     /** @dev calculates the seconds per token to a specific farm based on percentage of total
-  * This is used by the farm to determine each user's yield.
-  * @param farmAddr farm address to query
-  * @return seconds per token the farm is currently generating
-  */
+    * This is used by the farm to determine each user's yield.
+    * @param farmAddr farm address to query
+    * @return seconds per token the farm is currently generating
+    */
     function getFarmSecondsPerToken(address farmAddr) public view returns(uint256) {
         uint256 farmSecondsPerToken = 0;
         if(isFarmActive(farmAddr)){
@@ -221,10 +223,10 @@ contract Vault is Ownable, Pausable {
     }
 
     /** @dev calculates the emissions to a farm based on the perctage of
-  * emssions.
-  * @param farmAddr farm address to query
-  * @return perFarmEmission the Emissions going to farmAddr
-  */
+    * emssions.
+    * @param farmAddr farm address to query
+    * @return perFarmEmission the Emissions going to farmAddr
+    */
     function calculatePerFarmEmissions(address farmAddr) public view returns(uint256) {
         uint256 farmPercent = activeFarmPercents[farmAddr];
         uint256 perFarmEmission= (emissions * farmPercent)/100;
@@ -233,9 +235,9 @@ contract Vault is Ownable, Pausable {
     }
 
     /** @dev iterates over active farms to determine is passed address is in the array
-  * @param farmAddr farm address to query
-  * @return isActive - true if passed address is an active farm else false.
-  */
+    * @param farmAddr farm address to query
+    * @return isActive - true if passed address is an active farm else false.
+    */
     function isFarmActive(address farmAddr) public view returns(bool) {
         address addr;
         bool isActive = false;
