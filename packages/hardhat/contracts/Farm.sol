@@ -3,13 +3,14 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./CrownToken.sol";
 import "./Vault.sol";
 
 /// @title Crown Capital Single LP Farm
 /// @author sters.eth
 /// @notice Contract stakes Crown tokens and pays yield in Crown Tokens
-contract Farm is Ownable, Pausable {
+contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
     string public name = "Crown Capital Farm";
 
@@ -51,7 +52,7 @@ contract Farm is Ownable, Pausable {
     /** @dev allows the user to stake crown tokens when the contract is not paused.
   * @param amountToStake the amount of crown tokens the user wants to stake
   */
-    function stake(uint256 amountToStake) public whenNotPaused {
+    function stake(uint256 amountToStake) public whenNotPaused nonReentrant {
         require(
             amountToStake > 0,
             "You cannot stake zero tokens.");
@@ -71,15 +72,15 @@ contract Farm is Ownable, Pausable {
     }
 
     /** @dev allows the user to unstake crown tokens. Unstaking cannot be paused.
-  * @param amountToUnstake the amount of crown tokens the user wants to unstake
-  */
-    function unstake(uint256 amountToUnstake) public  {
+    * @param amountToUnstake the amount of crown tokens the user wants to unstake
+    */
+    function unstake(uint256 amountToUnstake) public nonReentrant {
         require(
             amountToUnstake > 0,
             "You cannot unstake zero tokens.");
         require(
             isStaking[msg.sender] &&
-        stakingBalance[msg.sender] >= amountToUnstake,
+            stakingBalance[msg.sender] >= amountToUnstake,
             "Requested withdraw greater than staking balance."
         );
         if(stakers.length > 0){
@@ -115,7 +116,7 @@ contract Farm is Ownable, Pausable {
     }
 
     /// @dev allows the user to withdraw crown tokens from yield when the farm is not paused.
-    function withdrawYield() public whenNotPaused {
+    function withdrawYield() public whenNotPaused nonReentrant {
         if (isStaking[msg.sender]){
             updateYield();
         }
