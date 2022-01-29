@@ -60,7 +60,7 @@ contract Farm is Ownable, Pausable {
         (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
         require(sent, "Failed to transfer tokens from user to Farm");
 
-        if(isStaking[msg.sender] == false){
+        if(!isStaking[msg.sender]){
             isStaking[msg.sender] = true;
             stakers.push(msg.sender);
         }
@@ -78,7 +78,7 @@ contract Farm is Ownable, Pausable {
             amountToUnstake > 0,
             "You cannot unstake zero tokens.");
         require(
-            isStaking[msg.sender] = true &&
+            isStaking[msg.sender] &&
         stakingBalance[msg.sender] >= amountToUnstake,
             "Requested withdraw greater than staking balance."
         );
@@ -170,7 +170,7 @@ contract Farm is Ownable, Pausable {
     /// @dev returns user staking percent of totalStaked
     function userStakingPercent(address staker) public view returns(uint256) {
         uint256 stakingPercent = 0;
-        if(isStaking[staker] == true){
+        if(isStaking[staker]){
             stakingPercent = (stakingBalance[staker]*10**18) / totalStaked;
         }
         return stakingPercent;
