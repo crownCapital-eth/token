@@ -24,7 +24,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     uint256 public totalStaked;
 
     /// @dev the time the farm was deployed
-    uint256 public farmStartTime;
+    uint256 public immutable farmStartTime;
 
     /// @dev addresses are mapped to a boolean indicating if the address is staking
     mapping(address => bool) public isStaking;

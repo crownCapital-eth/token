@@ -35,7 +35,7 @@ contract Vault is Ownable, Pausable {
     uint256 public constant secondsPerToken=2102400000000000000;
 
     /// @dev the time the vault was deployed
-    uint256 public vaultStartTime;
+    uint256 public immutable vaultStartTime;
 
     /// @dev the seconds in five years
     uint256 public secondsIn5Years=157680000;
