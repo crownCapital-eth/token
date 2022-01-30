@@ -163,7 +163,10 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
         uint256 secondsPassed = calculateYieldTime() * 10**18;
         uint256 stakingPercent = userStakingPercent(staker);
         uint256 farmSecondsPerToken = vault.getFarmSecondsPerToken(address(this));
-        uint256 newYield = (stakingPercent * secondsPassed) / (farmSecondsPerToken);
+        uint256 newYield = 0;
+        if(farmSecondsPerToken>0){
+            newYield = (stakingPercent * secondsPassed) / farmSecondsPerToken;
+        }
         uint256 totalYield = crownYield[staker] + newYield;
         return totalYield;
     }
