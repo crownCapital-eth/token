@@ -37,9 +37,6 @@ contract Vault is Ownable, Pausable {
     /// @dev the time the vault was deployed
     uint256 public immutable vaultStartTime;
 
-    /// @dev the seconds in five years
-    uint256 public secondsIn5Years=157680000;
-
     event EmissionsSent(address farmAddress, uint256 amount);
     event UpdateEmissions(uint256 emiss);
 
