@@ -39,6 +39,10 @@ contract Vault is Ownable, Pausable {
 
     event EmissionsSent(address farmAddress, uint256 amount);
     event UpdateEmissions(uint256 emiss);
+    event InitializeFarm(address farmAddress, uint256 percent);
+    event SetFarms(address[] farmTokens, uint256[] farmPercents);
+    event ResetInitialization(address[] activeFarmTokens, uint256[] farmPercents);
+    event KillFarms(string txt);
 
     CrownToken crownToken;
     constructor(address tokenAddress) {
@@ -60,13 +64,16 @@ contract Vault is Ownable, Pausable {
     );
     require(tokenAddress != address(0), 'address can not be zero address');
     farmTokens.push(tokenAddress);
-    farmPercents.push(percent);    
+    farmPercents.push(percent);  
+
+    emit InitializeFarm(tokenAddress, percent);
   }
 
   /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
   function resetInitialization() public onlyOwner {
     delete farmTokens;
     delete farmPercents;
+    emit ResetInitialization(farmTokens, farmPercents);
   }
 
   /** @dev used to set the active farms following intialization
@@ -95,6 +102,7 @@ contract Vault is Ownable, Pausable {
             activeFarmPercents[addr]=farmPercents[idx];
             activeFarmTokens.push(addr);
         }
+        emit SetFarms(activeFarmTokens, farmPercents);
         resetInitialization();
     }
 
@@ -125,6 +133,8 @@ contract Vault is Ownable, Pausable {
             activeFarmPercents[addr]=0;
         }
         delete activeFarmTokens;
+        string memory txt="All Active Farms Removed";
+        emit KillFarms(txt);
     }
 
     /// @dev sends all emissions to farms based on percentage of total emissions
