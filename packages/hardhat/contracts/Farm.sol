@@ -141,7 +141,6 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
     /// @dev updates the yield of each user. Sends crown to the farm.
     function updateYield() private {
-        vault.sendToFarm();
         for (
             uint256 stakersIndex = 0;
             stakersIndex < stakers.length;
@@ -153,6 +152,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
             crownYield[staker] = totalYield;
         }
         startTime = block.timestamp;
+        vault.sendToFarm();
     }
 
     /** @dev calculates a users total yield

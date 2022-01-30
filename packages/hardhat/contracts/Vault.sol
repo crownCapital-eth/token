@@ -216,7 +216,7 @@ contract Vault is Ownable, Pausable {
     function getFarmSecondsPerToken(address farmAddr) external view returns(uint256) {
         uint256 farmSecondsPerToken = 0;
         if(isFarmActive(farmAddr)){
-            uint256 farmPercent = getActiveFarmPercents(farmAddr);
+            uint256 farmPercent = activeFarmPercents[farmAddr];
             farmSecondsPerToken = (secondsPerToken*100)/farmPercent;
         }
         return farmSecondsPerToken;
