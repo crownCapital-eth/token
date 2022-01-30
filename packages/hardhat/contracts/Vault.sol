@@ -33,9 +33,11 @@ contract Vault is Ownable, Pausable {
     /// @dev The Vault emissions rate in seconds
     uint256 public constant tokensPerSecond= 475646879756468797;
     uint256 public constant secondsPerToken=2102400000000000000;
+    uint256 public constant secondsIn5Years=157680000;
 
     /// @dev the time the vault was deployed
     uint256 public immutable vaultStartTime;
+    uint256 public immutable vaultStopTime;
 
     event EmissionsSent(address farmAddress, uint256 amount);
     event UpdateEmissions(uint256 emiss);
@@ -49,6 +51,7 @@ contract Vault is Ownable, Pausable {
     require(tokenAddress != address(0), 'address can not be zero address');
     crownToken = CrownToken(tokenAddress);
     vaultStartTime=block.timestamp;
+    vaultStopTime=block.timestamp+secondsIn5Years;
     lastEmissionsTime=block.timestamp;
     emissions=0;
     }
@@ -177,7 +180,15 @@ contract Vault is Ownable, Pausable {
         t0=lastEmissionsTime;
         uint256 end = block.timestamp;
         lastEmissionsTime=end;
-        uint256 secondsPassed = (end - t0) * 10**18;
+       
+        // if(t0>vaultStopTime) {
+        uint256 secondsPassed = 0; // } else if(...
+        if (end>vaultStopTime && t0 < vaultStopTime) {
+            secondsPassed = (vaultStopTime - t0) * 10**18;
+        } else {
+            secondsPassed = (end - t0) * 10**18;
+        }
+        
         emissions += (secondsPassed * 10**18)/ secondsPerToken;
 
         uint256 available = 0;

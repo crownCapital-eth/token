@@ -134,6 +134,24 @@ describe("Yield Farm", () => {
     });
   });
 
+  describe("Does not fail after 5-years", () => {
+    it('stake', async () => {
+      // ACTION: Define Amounts and stake
+      stakeAmount = ethers.utils.parseEther("50");
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);      
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      const greaterThanSecondsIn5Years = 200000000;
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await ethers.provider.send("evm_mine");
+      // CHECK: stake, withdraw yield, unstake after 5 years
+      expect(await farmContract.unstake(stakeAmount)).to.be.ok;
+      expect( await farmContract.withdrawYield()).to.be.ok;
+      await expect( farmContract.stake(stakeAmount)).to.be.revertedWith("Emissions from the vault have concluded.");
+    });
+  });
+
   describe("stake()", () => {
     it("Revert: Cannot Stake 0 tokens", async () => {
       // ACTION: Define Amounts

@@ -50,12 +50,16 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /** @dev allows the user to stake crown tokens when the contract is not paused.
-  * @param amountToStake the amount of crown tokens the user wants to stake
-  */
+    * @param amountToStake the amount of crown tokens the user wants to stake
+    */
     function stake(uint256 amountToStake) external whenNotPaused nonReentrant {
         require(
             amountToStake > 0,
             "You cannot stake zero tokens.");
+        require(
+            startTime<vault.vaultStopTime(),
+            "Emissions from the vault have concluded."
+        );            
         updateYield();
 
         (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
@@ -139,7 +143,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
         emit YieldWithdraw(msg.sender, toTransfer);
     }
 
-    /// @dev updates the yield of each user. Sends crown to the farm.
+    /// @dev updates the yield of each user. Send crown to the farm.
     function updateYield() private {
         for (
             uint256 stakersIndex = 0;
@@ -156,9 +160,9 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /** @dev calculates a users total yield
-  *  @param staker address of staker to check
-  *  @return totalYield the total yield available to withdraw (when not paused)
-  */
+    *  @param staker address of staker to check
+    *  @return totalYield the total yield available to withdraw (when not paused)
+    */
     function calculateUserTotalYield(address staker) public view returns(uint256) {
         uint256 secondsPassed = calculateYieldTime() * 10**18;
         uint256 stakingPercent = userStakingPercent(staker);
@@ -182,9 +186,14 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
     /// @dev returns seconds passed since yield last updated
     function calculateYieldTime() public view returns(uint256){
-        uint256 totalTime = 0;
         uint256 end = block.timestamp;
-        totalTime = end - startTime;
+        uint256 vaultStopTime = vault.vaultStopTime();
+        uint256 totalTime = 0;
+        if (end>vaultStopTime && startTime<vaultStopTime) {
+            totalTime = (vaultStopTime - startTime);
+        } else {
+            totalTime = (end - startTime);
+        }
         return totalTime;
     }
 
@@ -210,8 +219,8 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /** @dev returns the amount of yield the staker
-  * @param staker address of user to request yield
-  */
+    * @param staker address of user to request yield
+    */
     function getCrownYield(address staker) external view returns(uint256) {
         return crownYield[staker];
     }
