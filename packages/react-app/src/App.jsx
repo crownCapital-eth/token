@@ -9,6 +9,7 @@ import externalContracts from "./contracts/external_contracts";
 import deployedContracts from "./contracts/hardhat_contracts.json";
 import Wallet from "./components/Wallet";
 import Title from "antd/es/typography/Title";
+import WalletSetup from "./helpers/WalletSetup";
 
 const { ethers } = require("ethers");
 const { Header, Footer, Content } = Layout;
@@ -17,6 +18,7 @@ const targetNetwork = NETWORKS.rinkebyArbitrum;
 const localProviderUrl = targetNetwork.rpcUrl;
 const localProviderUrlFromEnv = process.env.REACT_APP_PROVIDER ? process.env.REACT_APP_PROVIDER : localProviderUrl;
 const localProvider = new ethers.providers.StaticJsonRpcProvider(localProviderUrlFromEnv);
+const web3Modal = WalletSetup();
 
 function App() {
   const [injectedProvider, setInjectedProvider] = useState();
@@ -43,20 +45,18 @@ function App() {
   const writeContracts = useContractLoader(userSigner, contractConfig, localChainId);
 
   return (
-    <Layout style={{ height: "100vh" }}>
+    <Layout>
       <Header className={"navbar w-nav"}>
         <NavBar />
-        <Wallet injectedProvider={injectedProvider} setInjectedProvider={setInjectedProvider} />
+        <Wallet web3Modal={web3Modal} injectedProvider={injectedProvider} setInjectedProvider={setInjectedProvider} />
       </Header>
       <Content>
         <Title level={2}>Crown Capital Staking</Title>
         <Space>
-          <Button type={"primary"} shape="round" onClick={async () => {
-          }}>
+          <Button type={"primary"} shape="round" onClick={async () => {}}>
             Buy Crown
           </Button>
-          <Button type={"primary"} shape="round" onClick={async () => {
-          }}>
+          <Button type={"primary"} shape="round" onClick={async () => {}}>
             Import Crown Token
           </Button>
         </Space>

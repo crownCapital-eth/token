@@ -44,18 +44,18 @@ const noContractDisplay = (
 const isQueryable = fn => (fn.stateMutability === "view" || fn.stateMutability === "pure") && fn.inputs.length === 0;
 
 export default function Contract({
-                                   customContract,
-                                   account,
-                                   gasPrice,
-                                   signer,
-                                   provider,
-                                   name,
-                                   show,
-                                   price,
-                                   blockExplorer,
-                                   chainId,
-                                   contractConfig,
-                                 }) {
+  customContract,
+  account,
+  gasPrice,
+  signer,
+  provider,
+  name,
+  show,
+  price,
+  blockExplorer,
+  chainId,
+  contractConfig,
+}) {
   const contracts = useContractLoader(provider, contractConfig, chainId);
   let contract;
   if (!customContract) {
@@ -70,8 +70,8 @@ export default function Contract({
   const displayedContractFunctions = useMemo(() => {
     const results = contract
       ? Object.values(contract.interface.functions).filter(
-        fn => fn.type === "function" && !(show && show.indexOf(fn.name) < 0),
-      )
+          fn => fn.type === "function" && !(show && show.indexOf(fn.name) < 0),
+        )
       : [];
     return results;
   }, [contract, show]);
