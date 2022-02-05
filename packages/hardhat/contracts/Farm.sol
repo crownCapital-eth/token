@@ -42,7 +42,8 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     Vault vault;
     CrownToken crownToken;
     constructor(address tokenAddress, address vaultAddress) {
-        require(tokenAddress != address(0), 'address can not be zero address');
+        require(tokenAddress != address(0), 'token address can not be zero address');
+        require(vaultAddress != address(0), 'vault address can not be zero address');
         crownToken = CrownToken(tokenAddress);
         vault = Vault(vaultAddress);
         farmStartTime = block.timestamp;
