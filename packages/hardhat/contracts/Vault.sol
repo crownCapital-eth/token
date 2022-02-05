@@ -144,8 +144,8 @@ contract Vault is Ownable, Pausable {
     function sendToFarm() external whenNotPaused {
         calculateEmissions();
         require(
-            emissions > 0 ,
-            "Nothing to withdraw"
+            emissions >= 0 ,
+            "Emissions must be positive"
         );
 
         uint256 vaultBalance = 0;

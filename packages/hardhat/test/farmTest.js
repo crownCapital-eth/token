@@ -150,6 +150,28 @@ describe("Yield Farm", () => {
       expect( await farmContract.withdrawYield()).to.be.ok;
       await expect( farmContract.stake(stakeAmount)).to.be.revertedWith("Emissions from the vault have concluded.");
     });
+
+
+      it('Ensure sendToFarm ok after 5 years', async () => {
+        // ACTION: Define Amounts and stake
+        staker1Amount = ethers.utils.parseEther("50");
+        staker2Amount = ethers.utils.parseEther("150");
+        tokenContract.transfer(addr1.address, staker2Amount);
+        await tokenContract.approve(farmContract.address, staker1Amount);
+        await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+        await farmContract.stake(staker1Amount);
+        await farmContract.connect(addr1).stake(staker2Amount); 
+        // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+        const greaterThanSecondsIn5Years = 200000000;
+        // ACTION: Increase time
+        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+        await ethers.provider.send("evm_mine");
+        // CHECK: stake, withdraw yield, unstake after 5 years
+        expect(await farmContract.unstake(staker1Amount)).to.be.ok;
+        expect(await farmContract.connect(addr1).unstake(staker2Amount)).to.be.ok;
+        expect(await vaultContract.sendToFarm()).to.be.ok;
+      }); 
+
   });
 
   describe("stake()", () => {
