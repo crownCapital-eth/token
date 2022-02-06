@@ -63,6 +63,9 @@ describe("Yield Farm", () => {
     // Set the Farm Address
     await vaultContract.initializeFarm(farmContract.address, 50);
     await vaultContract.initializeFarm(mockLPFarmContract.address, 50);
+    const secondsIn48Hours = 172800;
+    await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+    await ethers.provider.send("evm_mine");
     await vaultContract.setFarms();
 
     // Transfer Ownership
@@ -127,6 +130,9 @@ describe("Yield Farm", () => {
       // ACTION: set farms
       await vaultContract.initializeFarm(farmContract.address, farm1Percent);
       await vaultContract.initializeFarm(mockLPFarmContract.address, farm2Percent);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // Stake
 

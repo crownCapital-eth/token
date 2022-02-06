@@ -39,6 +39,12 @@ contract Vault is Ownable, Pausable {
     uint256 public immutable vaultStartTime;
     uint256 public immutable vaultStopTime;
 
+    /// @dev the time initialize farms was last updated
+    uint256 public initializedFarmsTime;
+
+    /// @dev used to time lock the setFarms
+    uint256 public constant secondsIn48hours=172800;
+
     event EmissionsSent(address farmAddress, uint256 amount);
     event UpdateEmissions(uint256 emiss);
     event InitializeFarm(address farmAddress, uint256 percent);
@@ -53,6 +59,7 @@ contract Vault is Ownable, Pausable {
     vaultStartTime=block.timestamp;
     vaultStopTime=block.timestamp+secondsIn5Years;
     lastEmissionsTime=block.timestamp;
+    initializedFarmsTime=block.timestamp;
     emissions=0;
     }
 
@@ -66,6 +73,7 @@ contract Vault is Ownable, Pausable {
       "Percent must be between 0 and 100"
     );
     require(tokenAddress != address(0), 'address can not be zero address');
+    initializedFarmsTime=block.timestamp;
     farmTokens.push(tokenAddress);
     farmPercents.push(percent);  
 
@@ -79,9 +87,13 @@ contract Vault is Ownable, Pausable {
     emit ResetInitialization(farmTokens, farmPercents);
   }
 
-  /** @dev used to set the active farms following intialization
-   */
-    function setFarms() external onlyOwner{
+  /// @dev used to set the active farms following intialization
+    function setFarms() external onlyOwner {
+        require(
+            block.timestamp-initializedFarmsTime >= secondsIn48hours,
+            "Time Locked: Must wait 48 hours after last Farm initialization"
+        );        
+        
         require(
             farmTokens.length >= 1,
             "To set farm at least 1 farm must be initialized"

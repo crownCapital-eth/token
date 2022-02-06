@@ -49,6 +49,9 @@ describe("Yield Farm", () => {
 
     // Set the Farm Address
     await vaultContract.initializeFarm(farmContract.address, 100);
+    const secondsIn48Hours = 172800;
+    await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+    await ethers.provider.send("evm_mine");
     await vaultContract.setFarms();
 
     // Transfer Ownership
