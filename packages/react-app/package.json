@@ -2,6 +2,7 @@
   "name": "@crown-capital-staking/react-app",
   "version": "1.0.0",
   "homepage": ".",
+  "license": "MIT",
   "browserslist": {
     "production": [
       ">0.2%",
