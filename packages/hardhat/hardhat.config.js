@@ -13,18 +13,6 @@ require("@nomiclabs/hardhat-etherscan");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
-/*
-      📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
-
-      check out `packages/scripts/deploy.js` to customize your deployment
-
-      out of the box it will auto deploy anything in the `contracts` folder and named *.sol
-      plus it will use *.args for constructor args
-*/
-
-//
-// Select the network you want to deploy to here:
-//
 const defaultNetwork = "rinkebyArbitrum";
 
 const mainnetGwei = 500;
@@ -44,20 +32,23 @@ function mnemonic() {
 
 module.exports = {
   defaultNetwork,
-
-  // don't forget to set your provider like:
-  // REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
-  // (then your frontend will talk to your contracts on the live network!)
-  // (you will need to restart the `yarn run start` dev server after editing the .env)
-
   networks: {
     localhost: {
       url: "http://localhost:8545",
-      /*
-        notice no mnemonic here? it will just use account 0 of the hardhat node to deploy
-        (you can put in a mnemonic here to set the deployer locally)
-
-      */
+    },
+    mainnet: {
+      url: "https://arbitrum-mainnet.infura.io/v3/b7f85e79b12144f198a5e5e66a2f8afa",
+      gasPrice: mainnetGwei * 1000000000,
+      accounts: {
+        mnemonic: mnemonic(),
+      },
+    },
+    rinkeby: {
+      url: "https://rinkeby.infura.io/v3/b7f85e79b12144f198a5e5e66a2f8afa",
+      gasPrice: 4000000000,
+      accounts: {
+        mnemonic: mnemonic(),
+      },
     },
     rinkebyArbitrum: {
       url: "https://rinkeby.arbitrum.io/rpc",
@@ -119,9 +110,6 @@ module.exports = {
     deployer: {
       default: 0, // here this will by default take the first account as deployer
     },
-  },
-  etherscan: {
-    apiKey: "RQD26QHHW5EMGRK4BCPTMU22576IU17FVA", // your api key here
   },
 };
 
