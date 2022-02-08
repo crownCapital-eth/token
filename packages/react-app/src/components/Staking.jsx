@@ -6,7 +6,10 @@ import { ALLOWANCE_FUNCTION, CROWN_TOKEN_CONTRACT } from "../constants";
 
 export default function Staking({ address, readContracts, writeContracts, tx }) {
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
-  const farmApproval = useContractReader(readContracts, CROWN_TOKEN_CONTRACT, ALLOWANCE_FUNCTION, [address, farmAddress]);
+  const farmApproval = useContractReader(readContracts, CROWN_TOKEN_CONTRACT, ALLOWANCE_FUNCTION, [
+    address,
+    farmAddress,
+  ]);
 
   const [buying, setBuying] = useState();
 
