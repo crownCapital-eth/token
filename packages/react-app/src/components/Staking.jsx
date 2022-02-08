@@ -2,10 +2,11 @@ import { Button, Card, Input, Space } from "antd";
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import { useContractReader } from "eth-hooks";
+import { CROWN_TOKEN_CONTRACT } from "../constants";
 
 export default function Staking({ address, readContracts, writeContracts, tx }) {
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
-  const farmApproval = useContractReader(readContracts, "CrownToken", "allowance", [address, farmAddress]);
+  const farmApproval = useContractReader(readContracts, CROWN_TOKEN_CONTRACT, "allowance", [address, farmAddress]);
 
   const [buying, setBuying] = useState();
 

@@ -1,6 +1,7 @@
 export const INFURA_ID = "460f40a260564ac4a4f4b3fffb032dad";
 export const ETHERSCAN_KEY = "PSW8C433Q667DVEX5BCRMGNAH9FSGFZ7Q8";
 export const BLOCKNATIVE_DAPPID = "0b58206a-f3c0-4701-a62f-73c7243e8c77";
+export const CROWN_TOKEN_CONTRACT = "CrownToken";
 
 export const NETWORKS = {
   localhost: {
