@@ -1,21 +1,10 @@
 version: 0.0
 os: linux
 files:
-  - source: .
+  - source: /packages/react-app
     destination: /home/ec2-user/crown-capital/
-    owner: ec2-user
-    group: ec2-user
 hooks:
   ApplicationStart:
-    - location: /home/ec2-user/crown-capital/packages/react-app/scripts/deploy.sh
-      timeout: 180
-      runas: ec2-user
-permissions:
-  - object: /home/ec2-user/crown-capital/
-    pattern: "**"
-    owner: ec2-user
-    group: ec2-user
-    mode: 755
-    type:
-      - file
-      - directory
+    - location: packages/react-app/scripts/deploy.sh
+      timeout: 300
+      runas: root
