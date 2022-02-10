@@ -67,38 +67,36 @@ contract Vault is Ownable, Pausable {
     * @param tokenAddress address of farm.
     * @param percent 0 to 100 percent of the emssions which do to specified farm.
     */  
-  function initializeFarm(address tokenAddress, uint256 percent) external onlyOwner {
-    require(
-      percent>=0 && percent<=100,
-      "Percent must be between 0 and 100"
-    );
-    require(tokenAddress != address(0), 'address can not be zero address');
-    initializedFarmsTime=block.timestamp;
-    farmTokens.push(tokenAddress);
-    farmPercents.push(percent);  
+    function initializeFarm(address tokenAddress, uint256 percent) external onlyOwner {
+        require(
+        percent>=0 && percent<=100,
+        "Percent must be between 0 and 100"
+        );
+        require(tokenAddress != address(0), 'address can not be zero address');
+        initializedFarmsTime=block.timestamp;
+        farmTokens.push(tokenAddress);
+        farmPercents.push(percent);  
 
-    emit InitializeFarm(tokenAddress, percent);
-  }
+        emit InitializeFarm(tokenAddress, percent);
+    }
 
-  /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
-  function resetInitialization() public onlyOwner {
-    delete farmTokens;
-    delete farmPercents;
-    emit ResetInitialization(farmTokens, farmPercents);
-  }
+    /// @dev Owner reset any initalized farm is a mistake is made or when the active farms are set.
+    function resetInitialization() public onlyOwner {
+        delete farmTokens;
+        delete farmPercents;
+        emit ResetInitialization(farmTokens, farmPercents);
+    }
 
-  /// @dev used to set the active farms following intialization
+    /// @dev used to set the active farms following intialization
     function setFarms() external onlyOwner {
         require(
             block.timestamp-initializedFarmsTime >= secondsIn48hours,
             "Time Locked: Must wait 48 hours after last Farm initialization"
-        );        
-        
+        );                
         require(
             farmTokens.length >= 1,
             "To set farm at least 1 farm must be initialized"
         );
-
         require(
             farmTokens.length == farmPercents.length,
             "Addresses and percents must be of equal length"
@@ -137,8 +135,9 @@ contract Vault is Ownable, Pausable {
     /** @dev Kill switch to remove all active farms.
     Cannot delete mapping. Set ther old farm percents
     to zero then delete the activeFarm array
-  */
+    */
     function killActiveFarms() public onlyOwner {
+        // sendToFarm();
         for (
             uint256 idx = 0;
             idx < activeFarmTokens.length;
@@ -153,7 +152,7 @@ contract Vault is Ownable, Pausable {
     }
 
     /// @dev sends all emissions to farms based on percentage of total emissions
-    function sendToFarm() external whenNotPaused {
+    function sendToFarm() public whenNotPaused {
         calculateEmissions();
         require(
             emissions >= 0 ,
@@ -260,7 +259,6 @@ contract Vault is Ownable, Pausable {
     function calculatePerFarmEmissions(address farmAddr) public view returns(uint256) {
         uint256 farmPercent = activeFarmPercents[farmAddr];
         uint256 perFarmEmission= (emissions * farmPercent)/100;
-
         return perFarmEmission;
     }
 

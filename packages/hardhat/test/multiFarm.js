@@ -135,8 +135,6 @@ describe("Yield Farm", () => {
       await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // Stake
-
-
       await tokenContract.transfer(addr1.address, stakeAmount);
       await tokenContract.connect(addr1).approve(farmContract.address, stakeAmount);
       await mockTokenContract.transfer(addr1.address, stakeAmount);

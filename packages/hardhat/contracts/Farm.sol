@@ -18,7 +18,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     address[] public stakers;
 
     /// @dev last time farm yield was updated
-    uint256 public startTime;
+    // uint256 public startTime;
 
     /// @dev the total amount of tokens staked in contract
     uint256 public totalStaked;
@@ -34,6 +34,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
 
     /// @dev addresses are mapped to the amount has Staked
     mapping(address => uint256) public stakingBalance;
+    mapping(address => uint256) public stakingStartTime;
 
     event Stake(address indexed from, uint256 amount);
     event Unstake(address indexed from, uint256 amount);
@@ -58,21 +59,25 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
             amountToStake > 0,
             "You cannot stake zero tokens.");
         require(
-            startTime<vault.vaultStopTime(),
+            block.timestamp<vault.vaultStopTime(),
             "Emissions from the vault have concluded."
-        );            
-        updateYield();
+        );
+        
+        if (isStaking[msg.sender]){
+            updateYield();
+        }
 
         (bool sent) = crownToken.transferFrom(msg.sender, address(this), amountToStake);
         require(sent, "Failed to transfer tokens from user to Farm");
-
+        
         if(!isStaking[msg.sender]){
             isStaking[msg.sender] = true;
             stakers.push(msg.sender);
         }
+
         stakingBalance[msg.sender] += amountToStake;
         totalStaked+=amountToStake;
-        startTime = block.timestamp;
+        stakingStartTime[msg.sender] = block.timestamp;
         emit Stake(msg.sender, amountToStake);
     }
 
@@ -144,19 +149,11 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
         emit YieldWithdraw(msg.sender, toTransfer);
     }
 
-    /// @dev updates the yield of each user. Send crown to the farm.
+    /// @dev updates the yield of the user. Send crown to the farm.
     function updateYield() private {
-        for (
-            uint256 stakersIndex = 0;
-            stakersIndex < stakers.length;
-            stakersIndex++
-        ) {
-            address staker = stakers[stakersIndex];
-            uint256 totalYield = 0;
-            totalYield = calculateUserTotalYield(staker);
-            crownYield[staker] = totalYield;
-        }
-        startTime = block.timestamp;
+        uint256 totalYield = calculateUserTotalYield(msg.sender);
+        crownYield[msg.sender] = totalYield;
+        stakingStartTime[msg.sender] = block.timestamp;
         vault.sendToFarm();
     }
 
@@ -165,7 +162,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     *  @return totalYield the total yield available to withdraw (when not paused)
     */
     function calculateUserTotalYield(address staker) public view returns(uint256) {
-        uint256 secondsPassed = calculateYieldTime() * 10**18;
+        uint256 secondsPassed = calculateYieldTime(staker) * 10**18;
         uint256 stakingPercent = userStakingPercent(staker);
         uint256 farmSecondsPerToken = vault.getFarmSecondsPerToken(address(this));
         uint256 newYield = 0;
@@ -186,14 +183,15 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /// @dev returns seconds passed since yield last updated
-    function calculateYieldTime() public view returns(uint256){
+    function calculateYieldTime(address staker) public view returns(uint256){
         uint256 end = block.timestamp;
         uint256 vaultStopTime = vault.vaultStopTime();
+        uint256 startTime = stakingStartTime[staker];
         uint256 totalTime = 0;
         if (end>vaultStopTime && startTime<vaultStopTime) {
-            totalTime = (vaultStopTime - startTime);
+            totalTime = vaultStopTime - startTime;
         } else {
-            totalTime = (end - startTime);
+            totalTime = end - startTime;
         }
         return totalTime;
     }
@@ -218,6 +216,11 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     function getUserBalance(address staker) external view returns(uint256) {
         return stakingBalance[staker];
     }
+
+    /// @dev returns the last time a user updated
+    function getUserStartTime(address staker) external view returns(uint256) {
+        return stakingStartTime[staker];
+    }    
 
     /** @dev returns the amount of yield the staker
     * @param staker address of user to request yield
