@@ -37,8 +37,8 @@ export default function Wallet({ web3Modal, injectedProvider, setInjectedProvide
   }, [loadWeb3Modal]);
 
   return (
-    <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 5 }}>
+
       <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-    </div>
+
   );
 }

@@ -1,63 +1,62 @@
 import { NETWORK } from "../constants";
-import { Alert, Button } from "antd";
-import React from "react";
+import React, { useState } from "react";
+import { Alert, Button } from "react-bootstrap";
 
 export default function NetworkDisplay({ userSigner, localChainId, targetNetwork }) {
   const selectedChainId =
     userSigner && userSigner.provider && userSigner.provider._network && userSigner.provider._network.chainId;
 
+  const [show, setShow] = useState(true);
+
+  function switchNetwork() {
+    return async () => {
+      const ethereum = window.ethereum;
+      const data = [
+        {
+          chainId: "0x" + targetNetwork.chainId.toString(16),
+          chainName: targetNetwork.name,
+          nativeCurrency: targetNetwork.nativeCurrency,
+          rpcUrls: [targetNetwork.rpcUrl],
+          blockExplorerUrls: [targetNetwork.blockExplorer],
+        },
+      ];
+
+      let switchTx;
+      try {
+        switchTx = await ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: data[0].chainId }],
+        });
+      } catch (switchError) {
+        try {
+          switchTx = await ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: data,
+          });
+        } catch (addError) {
+          // handle "add" error
+        }
+      }
+
+      if (switchTx) {
+        console.log(switchTx);
+      }
+    };
+  }
+
   if (localChainId && selectedChainId && localChainId !== selectedChainId) {
-    const networkSelected = NETWORK(selectedChainId);
     const networkLocal = NETWORK(localChainId);
     return (
       <div style={{ zIndex: 2, position: "absolute", right: 0, top: 60, padding: 16 }}>
-        <Alert
-          message="⚠️ Wrong Network"
-          description={
-            <div>
-              You have <b>{networkSelected && networkSelected.name}</b> selected and you need to be on{" "}
-              <Button
-                onClick={async () => {
-                  const ethereum = window.ethereum;
-                  const data = [
-                    {
-                      chainId: "0x" + targetNetwork.chainId.toString(16),
-                      chainName: targetNetwork.name,
-                      nativeCurrency: targetNetwork.nativeCurrency,
-                      rpcUrls: [targetNetwork.rpcUrl],
-                      blockExplorerUrls: [targetNetwork.blockExplorer],
-                    },
-                  ];
-
-                  let switchTx;
-                  try {
-                    switchTx = await ethereum.request({
-                      method: "wallet_switchEthereumChain",
-                      params: [{ chainId: data[0].chainId }],
-                    });
-                  } catch (switchError) {
-                    try {
-                      switchTx = await ethereum.request({
-                        method: "wallet_addEthereumChain",
-                        params: data,
-                      });
-                    } catch (addError) {
-                      // handle "add" error
-                    }
-                  }
-
-                  if (switchTx) {
-                    console.log(switchTx);
-                  }
-                }}
-              >
-                <b>{networkLocal && networkLocal.name}</b>
-              </Button>
-            </div>
-          }
-          type="error"
-          closable={false}
-        />
+        <Alert variant={"danger"} onClose={() => setShow(false)} dismissible>
+          <Alert.Heading>⚠️ Wrong Network</Alert.Heading>
+          <p>
+            To interact with Crown Capital staking you need to be on {" "}
+            <Button onClick={switchNetwork()}>
+              <b>{networkLocal && networkLocal.name}</b>
+            </Button>
+          </p>
+        </Alert>
       </div>
     );
   } else {

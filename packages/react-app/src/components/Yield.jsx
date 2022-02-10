@@ -1,24 +1,23 @@
 import { Balance } from "./index";
-import { Button, Card, Space } from "antd";
 import { useContractReader } from "eth-hooks";
 import { useState } from "react";
+import { Button, Card } from "react-bootstrap";
 
 export default function Yield({ address, readContracts, writeContracts, tx }) {
   const UserYield = useContractReader(readContracts, "Farm", "crownYield", [address]);
   const [claiming, setClaiming] = useState();
 
   return (
-    <Card title="Yield Generated" className={"ant-card-small"}>
-      <div style={{ padding: 8 }}>
-        <Balance balance={UserYield} fontSize={64} />
-      </div>
+    <Card as="h5" className="text-center">
+      <Card.Header>Yield Generated</Card.Header>
+      <Card.Body>
+        <div style={{ padding: 8 }}>
+          <Balance balance={UserYield} fontSize={64} />
+        </div>
 
-      <div style={{ padding: 8 }}>
-        <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
+        <div style={{ padding: 8 }}>
           <Button
-            type={"primary"}
-            shape="round"
-            loading={claiming}
+            disabled={claiming}
             onClick={async () => {
               setClaiming(true);
               await tx(writeContracts.Farm.updateYield());
@@ -29,9 +28,7 @@ export default function Yield({ address, readContracts, writeContracts, tx }) {
           </Button>
 
           <Button
-            type={"primary"}
-            loading={claiming}
-            shape="round"
+            disabled={claiming}
             onClick={async () => {
               setClaiming(true);
               await tx(writeContracts.Farm.withdrawYield());
@@ -40,8 +37,8 @@ export default function Yield({ address, readContracts, writeContracts, tx }) {
           >
             Claim
           </Button>
-        </Space>
-      </div>
+        </div>
+      </Card.Body>
     </Card>
   );
 }
