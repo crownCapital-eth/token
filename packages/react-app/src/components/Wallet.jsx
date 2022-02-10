@@ -36,9 +36,5 @@ export default function Wallet({ web3Modal, injectedProvider, setInjectedProvide
     }
   }, [loadWeb3Modal]);
 
-  return (
-
-      <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-
-  );
+  return <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />;
 }

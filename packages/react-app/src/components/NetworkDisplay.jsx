@@ -51,7 +51,7 @@ export default function NetworkDisplay({ userSigner, localChainId, targetNetwork
         <Alert variant={"danger"} onClose={() => setShow(false)} dismissible>
           <Alert.Heading>⚠️ Wrong Network</Alert.Heading>
           <p>
-            To interact with Crown Capital staking you need to be on {" "}
+            To interact with Crown Capital staking you need to be on{" "}
             <Button onClick={switchNetwork()}>
               <b>{networkLocal && networkLocal.name}</b>
             </Button>

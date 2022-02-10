@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import { useContractReader } from "eth-hooks";
 import { ALLOWANCE_FUNCTION, CROWN_TOKEN_CONTRACT } from "../constants";
-import { Button, Card, Nav, Tab, Tabs } from "react-bootstrap";
+import { Button, Card, Tab, Tabs } from "react-bootstrap";
 
 export default function Staking({ address, readContracts, writeContracts, tx }) {
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
@@ -37,7 +37,7 @@ export default function Staking({ address, readContracts, writeContracts, tx }) 
     stake: (
       <div>
         <div style={{ padding: 8 }}>
-          <label style={{paddingRight: "5px"}}>Stake Amount: </label>
+          <label style={{ paddingRight: "5px" }}>Stake Amount: </label>
           <input
             style={{ textAlign: "center" }}
             value={amountToStake}
@@ -46,7 +46,7 @@ export default function Staking({ address, readContracts, writeContracts, tx }) 
             }}
           />
         </div>
-        <div style={{ padding: 8 }}>
+        <div style={{ padding: 8 }} className={"d-flex justify-content-evenly"}>
           <Button
             type={"primary"}
             loading={buying}
@@ -68,7 +68,6 @@ export default function Staking({ address, readContracts, writeContracts, tx }) 
           <Button
             type={"primary"}
             loading={buying}
-            shape="round"
             onClick={async () => {
               setBuying(true);
               await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));

@@ -15,7 +15,7 @@ export default function Yield({ address, readContracts, writeContracts, tx }) {
           <Balance balance={UserYield} fontSize={64} />
         </div>
 
-        <div style={{ padding: 8 }}>
+        <div style={{ padding: 8 }} className={"d-flex justify-content-evenly"}>
           <Button
             disabled={claiming}
             onClick={async () => {
