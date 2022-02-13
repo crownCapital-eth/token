@@ -2,6 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom";
 import App from "./App";
 import "./index.css";
-import "./crown-capital.css";
+import "./dark-theme.css";
 
 ReactDOM.render(<App />, document.getElementById("root"));

@@ -74,7 +74,13 @@ export default function Provider(props) {
   if (typeof signer !== "undefined" && address) {
     showWallet = (
       <span>
+<<<<<<< HEAD
         <span style={{ padding: 3 }}>{address}</span>
+=======
+        <span style={{ padding: 3 }}>
+          <Address minimized address={address} />
+        </span>
+>>>>>>> 52aa52cfe45c9242a368ef77a74958a1bae73f7b
       </span>
     );
   }
