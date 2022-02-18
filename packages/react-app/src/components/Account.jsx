@@ -1,30 +1,18 @@
-import { Button } from "antd";
 import React from "react";
+import { Button } from "react-bootstrap";
 
 export default function Account({ web3Modal, loadWeb3Modal, logoutOfWeb3Modal }) {
   const modalButtons = [];
   if (web3Modal) {
     if (web3Modal.cachedProvider) {
       modalButtons.push(
-        <Button
-          key="logoutbutton"
-          style={{ verticalAlign: "top", marginLeft: 8, marginTop: 4 }}
-          shape="round"
-          size="large"
-          onClick={logoutOfWeb3Modal}
-        >
+        <Button key="disconnect-wallet" variant="warning" size="sm" onClick={logoutOfWeb3Modal}>
           Disconnect
         </Button>,
       );
     } else {
       modalButtons.push(
-        <Button
-          key="loginbutton"
-          style={{ verticalAlign: "top", marginLeft: 8, marginTop: 4 }}
-          shape="round"
-          size="large"
-          onClick={loadWeb3Modal}
-        >
+        <Button key="connect-wallet" variant="warning" size="sm" onClick={loadWeb3Modal}>
           Connect Wallet
         </Button>,
       );
