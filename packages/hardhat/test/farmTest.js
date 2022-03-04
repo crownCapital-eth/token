@@ -39,6 +39,8 @@ describe("Yield Farm", () => {
     // Deploy Vault Contract
     const VaultContract = await ethers.getContractFactory("Vault");
     vaultContract = await VaultContract.deploy(tokenContract.address);
+    // Start Emissions
+    await vaultContract.startEmissions()
 
     // Deploy Farm Contract
     const FarmContract = await ethers.getContractFactory("Farm");
