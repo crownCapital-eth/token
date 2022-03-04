@@ -36,8 +36,11 @@ contract Vault is Ownable, Pausable {
     uint256 public constant secondsIn5Years=157680000;
 
     /// @dev the time the vault was deployed
-    uint256 public immutable vaultStartTime;
-    uint256 public immutable vaultStopTime;
+    uint256 public vaultStartTime;
+    uint256 public vaultStopTime;
+
+    /// @dev the vault emissions are zero until the vault is started
+    bool public emissionsStarted;
 
     /// @dev the time initialize farms was last updated
     uint256 public initializedFarmsTime;
@@ -54,13 +57,24 @@ contract Vault is Ownable, Pausable {
 
     CrownToken crownToken;
     constructor(address tokenAddress) {
-    require(tokenAddress != address(0), 'address can not be zero address');
-    crownToken = CrownToken(tokenAddress);
-    vaultStartTime=block.timestamp;
-    vaultStopTime=block.timestamp+secondsIn5Years;
-    lastEmissionsTime=block.timestamp;
-    initializedFarmsTime=block.timestamp;
-    emissions=0;
+        require(tokenAddress != address(0), 'address can not be zero address');
+        crownToken = CrownToken(tokenAddress);
+        vaultStartTime=block.timestamp;
+        vaultStopTime=block.timestamp+secondsIn5Years;
+        lastEmissionsTime=block.timestamp;
+        initializedFarmsTime=block.timestamp;
+        emissions=0;
+        emissionsStarted=false;
+    }
+
+    /** @dev The owner may call this to start the emissions from the vault.
+     * Emissions are 0 prior to starting the vault
+    */
+    function startEmissions() external onlyOwner {
+        emissionsStarted=true;
+        lastEmissionsTime=block.timestamp;
+        vaultStartTime=block.timestamp;
+        vaultStopTime=block.timestamp+secondsIn5Years;
     }
 
     /** @dev Owner may intialize a new farm or set of farms 1 at a time.
@@ -207,6 +221,11 @@ contract Vault is Ownable, Pausable {
         if(emissions >  available){
             emissions=available;
         }
+
+        if (!emissionsStarted){
+            emissions=0;
+        }
+
         emit UpdateEmissions(emissions);
     }
 
