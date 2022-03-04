@@ -93,6 +93,7 @@ describe("Yield Farm", () => {
         .approve(farmContract.address, stakeAmount);
       await farmContract.connect(addr1).stake(stakeAmount);
       await farmContract.connect(addr1).unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       expect(await farmContract.connect(addr1).withdrawYield())
         .to.be.ok;
     });
@@ -152,6 +153,7 @@ describe("Yield Farm", () => {
       await ethers.provider.send("evm_mine");
       // CHECK: stake, withdraw yield, unstake after 5 years
       expect(await farmContract.unstake(stakeAmount)).to.be.ok;
+      await vaultContract.sendToFarm();
       expect( await farmContract.withdrawYield()).to.be.ok;
       await expect( farmContract.stake(stakeAmount)).to.be.revertedWith("Emissions from the vault have concluded.");
     });
@@ -495,6 +497,7 @@ describe("Yield Farm", () => {
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
       await farmContract.unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       await expect(farmContract.withdrawYield())
         .to.emit(farmContract, "YieldWithdraw")
         .withArgs(owner.address, tokensPerSecond);
@@ -511,6 +514,7 @@ describe("Yield Farm", () => {
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
       await farmContract.unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       await farmContract.withdrawYield();
       // CHECK: Balance
       finalBalance = await tokenContract.balanceOf(owner.address);
@@ -585,14 +589,11 @@ describe("Yield Farm", () => {
       // ACTION: UNSTAKE
       await farmContract.unstake(staker1Amount);
       await farmContract.connect(addr1).unstake(staker2Amount);
-      var staker2UnstakeTime = await getCurrentTime();
-      var totalTimeStaking = staker2UnstakeTime.sub(staker1StartTime);
       // CHECK: Total emissions generated sent to farm
-      // TODO: add a percentage check
-      var farmBalance = await tokenContract.balanceOf(farmContract.address);
-      // const farmStartTime = await farmContract.farmStartTime();
       const vaultStartTime = await vaultContract.vaultStartTime();
+      await vaultContract.sendToFarm();
       var currentTime = await getCurrentTime();
+      var farmBalance = await tokenContract.balanceOf(farmContract.address);
       var totalTimePassed = currentTime.sub(vaultStartTime);
       expect(farmBalance).to.be.closeTo(totalTimePassed.mul(tokensPerSecond), tolerance);
       // CHECK: Zero Staked Balance after unstake
@@ -600,9 +601,9 @@ describe("Yield Farm", () => {
       staker2Balance = await farmContract.getUserBalance(addr1.address);
       expect(staker1Balance).to.equal(utils.parseEther("0"));
       expect(staker2Balance).to.equal(utils.parseEther("0"));
-      // CHECK: Yield 
-      yield1 = await farmContract.calculateUserTotalYield(owner.address);
-      yield2 = await farmContract.calculateUserTotalYield(addr1.address);
+      // CHECK: Yield       
+      yield1 = await farmContract.getCrownYield(owner.address)
+      yield2 = await farmContract.getCrownYield(addr1.address)
       expect(yield1).to.closeTo(expectedstaker1Yield, tolerance);
       expect(yield2).to.closeTo(expectedstaker2Yield, tolerance);
       expect(yield1.add(yield2)).to.be.closeTo(tokensPerSecond.mul(3), tolerance);

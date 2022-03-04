@@ -25,7 +25,8 @@ const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 //
 // Select the network you want to deploy to here:
 //
-const defaultNetwork = "rinkebyArbitrum";
+//const defaultNetwork = "rinkebyArbitrum";
+const defaultNetwork = "rinkeby";
 
 const mainnetGwei = 500;
 
@@ -101,15 +102,15 @@ module.exports = {
           },
         },
       },
-      {
-        version: "0.6.7",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 200,
-          },
-        },
-      },
+      // {
+      //   version: "0.6.7",
+      //   settings: {
+      //     optimizer: {
+      //       enabled: true,
+      //       runs: 200,
+      //     },
+      //   },
+      // },
     ],
   },
   ovm: {

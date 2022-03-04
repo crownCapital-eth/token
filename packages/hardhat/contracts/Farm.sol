@@ -154,7 +154,7 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
         uint256 totalYield = calculateUserTotalYield(msg.sender);
         crownYield[msg.sender] = totalYield;
         stakingStartTime[msg.sender] = block.timestamp;
-        vault.sendToFarm();
+        // vault.sendToFarm();
     }
 
     /** @dev calculates a users total yield

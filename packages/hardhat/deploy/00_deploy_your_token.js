@@ -1,6 +1,12 @@
 // deploy/00_deploy_your_contract.js
 
 const { ethers } = require("hardhat");
+const { BigNumber, providers, Wallet } = require('ethers')
+const { Bridge } = require('arb-ts')
+const { arbLog, requireEnvVariables } = require('arb-shared-dependencies')
+require('dotenv').config()
+requireEnvVariables(['DEVNET_PRIVKEY', 'L2RPC', 'L1RPC'])
+
 
 module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   const { deploy } = deployments;
@@ -65,4 +71,4 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-module.exports.tags = ["YourToken"];
+// module.exports.tags = ["YourToken"];

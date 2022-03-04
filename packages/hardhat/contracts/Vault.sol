@@ -151,7 +151,6 @@ contract Vault is Ownable, Pausable {
     to zero then delete the activeFarm array
     */
     function killActiveFarms() public onlyOwner {
-        // sendToFarm();
         for (
             uint256 idx = 0;
             idx < activeFarmTokens.length;
@@ -189,7 +188,7 @@ contract Vault is Ownable, Pausable {
             uint256 toTransfer = 0;
             address farmAddr = activeFarmTokens[idx];
 
-            toTransfer =calculatePerFarmEmissions(farmAddr);
+            toTransfer = calculatePerFarmEmissions(farmAddr);
             amountToFarms-=toTransfer;
             (bool sent) = crownToken.transfer(farmAddr, toTransfer);
             require(sent, "Failed to withdraw Tokens");
