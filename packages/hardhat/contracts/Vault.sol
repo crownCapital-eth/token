@@ -83,7 +83,7 @@ contract Vault is Ownable, Pausable {
     */  
     function initializeFarm(address tokenAddress, uint256 percent) external onlyOwner {
         require(
-        percent>=0 && percent<=100,
+        percent<=100,
         "Percent must be between 0 and 100"
         );
         require(tokenAddress != address(0), 'address can not be zero address');
@@ -165,12 +165,8 @@ contract Vault is Ownable, Pausable {
     }
 
     /// @dev sends all emissions to farms based on percentage of total emissions
-    function sendToFarm() public whenNotPaused {
+    function sendToFarm() external whenNotPaused {
         calculateEmissions();
-        require(
-            emissions >= 0 ,
-            "Emissions must be positive"
-        );
 
         uint256 vaultBalance = 0;
         vaultBalance = crownToken.balanceOf(address(this));
