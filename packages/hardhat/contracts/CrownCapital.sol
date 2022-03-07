@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-contract CrownToken is ERC20, ERC20Permit, ERC20Votes {
+contract CrownCapital is ERC20, ERC20Permit, ERC20Votes {
 
-    constructor() ERC20("Crown Capital Token", "CROWN") ERC20Permit("Crown Capital Token"){
+    constructor() ERC20("Crown Capital", "CROWN") ERC20Permit("Crown Capital"){
         _mint(msg.sender, 1e8 * 10**18);
     }
     function _afterTokenTransfer(address from, address to, uint256 amount)

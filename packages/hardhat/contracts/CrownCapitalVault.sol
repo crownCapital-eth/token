@@ -3,12 +3,12 @@ pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "./CrownToken.sol";
+import "./CrownCapital.sol";
 
 /// @title Crown Capital Vault
 /// @author sters.eth
 /// @notice Contract sends token emissions to farms over a 5 year period
-contract Vault is Ownable, Pausable {
+contract CrownCapitalVault is Ownable, Pausable {
 
     string public constant name = "Crown Capital Vault";
 
@@ -55,10 +55,10 @@ contract Vault is Ownable, Pausable {
     event ResetInitialization(address[] activeFarmTokens, uint256[] farmPercents);
     event KillFarms(string txt);
 
-    CrownToken crownToken;
+    CrownCapital crownCapital;
     constructor(address tokenAddress) {
         require(tokenAddress != address(0), 'address can not be zero address');
-        crownToken = CrownToken(tokenAddress);
+        crownCapital = CrownCapital(tokenAddress);
         vaultStartTime=block.timestamp;
         vaultStopTime=block.timestamp+secondsIn5Years;
         lastEmissionsTime=block.timestamp;
@@ -169,7 +169,7 @@ contract Vault is Ownable, Pausable {
         calculateEmissions();
 
         uint256 vaultBalance = 0;
-        vaultBalance = crownToken.balanceOf(address(this));
+        vaultBalance = crownCapital.balanceOf(address(this));
         require(vaultBalance >= emissions,
             "Insuffcient funds in Vault Contract");
 
@@ -186,7 +186,7 @@ contract Vault is Ownable, Pausable {
 
             toTransfer = calculatePerFarmEmissions(farmAddr);
             amountToFarms-=toTransfer;
-            (bool sent) = crownToken.transfer(farmAddr, toTransfer);
+            (bool sent) = crownCapital.transfer(farmAddr, toTransfer);
             require(sent, "Failed to withdraw Tokens");
 
             emit EmissionsSent(farmAddr, toTransfer);
@@ -212,7 +212,7 @@ contract Vault is Ownable, Pausable {
         emissions += (secondsPassed * 10**18)/ secondsPerToken;
 
         uint256 available = 0;
-        available = crownToken.balanceOf(address(this));
+        available = crownCapital.balanceOf(address(this));
         if(emissions >  available){
             emissions=available;
         }

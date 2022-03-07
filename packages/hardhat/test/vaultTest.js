@@ -31,17 +31,17 @@ describe("Vault", () => {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     // Deploy Token contract
-    TokenContract = await ethers.getContractFactory('CrownToken');
+    TokenContract = await ethers.getContractFactory('CrownCapital');
     tokenContract = await TokenContract.deploy();
 
     // Deploy Vault Contract
-    const VaultContract = await ethers.getContractFactory('Vault');
+    const VaultContract = await ethers.getContractFactory('CrownCapitalVault');
     vaultContract = await VaultContract.deploy(tokenContract.address);
     // Start Emissions
     await vaultContract.startEmissions()    
 
     // Deploy Farm Contract
-    const FarmContract = await ethers.getContractFactory('Farm');
+    const FarmContract = await ethers.getContractFactory('CrownCapitalFarm');
     farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address);
 
     // Transfer Tokens

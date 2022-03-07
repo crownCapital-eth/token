@@ -4,13 +4,13 @@ pragma solidity 0.8.12;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./CrownToken.sol";
+import "./CrownCapital.sol";
 import "./Vault.sol";
 
 /// @title Crown Capital Single LP Farm
 /// @author sters.eth
 /// @notice Contract stakes Crown tokens and pays yield in Crown Tokens
-contract Farm is Ownable, Pausable, ReentrancyGuard  {
+contract CrownCapitalFarm is Ownable, Pausable, ReentrancyGuard  {
 
     string public constant name = "Crown Capital Farm";
 
@@ -40,13 +40,13 @@ contract Farm is Ownable, Pausable, ReentrancyGuard  {
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
 
-    Vault vault;
-    CrownToken crownToken;
+    CrownCapitalVault vault;
+    CrownCapital crownToken;
     constructor(address tokenAddress, address vaultAddress) {
         require(tokenAddress != address(0), 'token address can not be zero address');
         require(vaultAddress != address(0), 'vault address can not be zero address');
-        crownToken = CrownToken(tokenAddress);
-        vault = Vault(vaultAddress);
+        crownToken = CrownCapital(tokenAddress);
+        vault = CrownCapitalVault(vaultAddress);
         farmStartTime = block.timestamp;
         totalStaked=0;
     }

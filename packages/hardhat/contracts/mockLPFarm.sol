@@ -3,7 +3,7 @@ pragma solidity 0.8.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./mockSushiLPToken.sol";
-import "./CrownToken.sol";
+import "./CrownCapital.sol";
 import "./Vault.sol";
 
 contract mockLPFarm is Ownable {
@@ -26,15 +26,15 @@ contract mockLPFarm is Ownable {
     event Unstake(address indexed from, uint256 amount);
     event YieldWithdraw(address indexed to, uint256 amount);
 
-    Vault vault;
+    CrownCapitalVault vault;
     MockSushiLP sushiToken;
-    CrownToken crownToken;
+    CrownCapital crownCapital;
     constructor(address stakeToken, address rewardsToken, address vaultAddress) {
         sushiToken = MockSushiLP(stakeToken);
         sushiAddress = stakeToken;
-        crownToken = CrownToken(rewardsToken);
+        crownCapital = CrownCapital(rewardsToken);
         crownAddress = rewardsToken;
-        vault = Vault(vaultAddress);
+        vault = CrownCapitalVault(vaultAddress);
         farmStartTime = block.timestamp;
         totalStaked = 0;
     }
@@ -116,11 +116,11 @@ contract mockLPFarm is Ownable {
             "Nothing to withdraw"
         );
 
-        uint256 farmBalance = crownToken.balanceOf(address(this));
+        uint256 farmBalance = crownCapital.balanceOf(address(this));
         require(farmBalance >= toTransfer,
             "Insuffcient funds in Farm Contract");
 
-        (bool sent) = crownToken.transfer(msg.sender, toTransfer);
+        (bool sent) = crownCapital.transfer(msg.sender, toTransfer);
         require(sent, "Failed to withdraw Tokens");
 
         emit YieldWithdraw(msg.sender, toTransfer);
