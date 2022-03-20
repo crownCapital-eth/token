@@ -6,24 +6,24 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  // Get the previously deployed crownToken and Farm
-  const crownToken = await ethers.getContract("CrownToken", deployer);
-  const argz = [crownToken.address];
+  // Get the previously deployed CrownCapital and Farm
+  const crownCapital = await ethers.getContract("CrownCapital", deployer);
+  const argz = [crownCapital.address];
 
   // Deploy the vault
-  await deploy("Vault", {
+  await deploy("CrownCapitalVault", {
     from: deployer,
     args: argz, // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
     log: true,
   });
 
-  const vault = await ethers.getContract("Vault", deployer);
-  const DAO_multisig="0x69dA48Df7177bc57639F1015E3B9a00f96f7c1d1"; 
+  const vault = await ethers.getContract("CrownCapitalVault", deployer);
+  const DAO_multisig="0x60f7cBAbF6f7A5525E47EE814DEfA72a18Fa45CC"; 
 
   // Transfer the tokens to the vault
   console.log("\n 🏵  Send 75% of tokens (75,000,000) to the vault...\n");
 
-  const transferTransaction1 = await crownToken.transfer(
+  const transferTransaction1 = await crownCapital.transfer(
     vault.address,
     ethers.utils.parseEther("75000000")
   );
@@ -33,7 +33,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   // Transfer the tokens to the vault
   console.log("\n 🏵  Send 25% of tokens (25,000,000) to DAO Multisig...\n");
 
-  const transferTransaction2 = await crownToken.transfer(
+  const transferTransaction2 = await crownCapital.transfer(
     DAO_multisig,
     ethers.utils.parseEther("25000000")
   );
@@ -53,7 +53,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         await sleep( 60000 ) // wait seconds for deployment to propagate
         await run("verify:verify", {
           address: vault.address,
-          contract: "contracts/Vault.sol:Vault",
+          contract: "contracts/CrownCapitalVault.sol:CrownCapitalVault",
           constructorArguments: argz,
         });
       } catch (e) {
