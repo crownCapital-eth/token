@@ -44,5 +44,7 @@
       "**/hardhat-ts/**"
     ]
   },
-  "dependencies": {}
+  "dependencies": {
+    "solc": "0.8.12"
+  }
 }

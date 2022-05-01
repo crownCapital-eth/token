@@ -1,4 +1,4 @@
-// deploy/01_deploy_farm.js
+// // deploy/01_deploy_farm.js
 
 const { ethers } = require("hardhat");
 
@@ -7,7 +7,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deployer } = await getNamedAccounts();
   const chainId = await getChainId();
 
-  // // You might need the previously deployed crownToken:
+  // Get the previously deployed crownToken:
   const crownToken = await ethers.getContract("CrownToken", deployer);
   const vault = await ethers.getContract("Vault", deployer);
 
@@ -42,8 +42,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
 };
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// function sleep(ms) {
+//   return new Promise((resolve) => setTimeout(resolve, ms));
+// }
 
-module.exports.tags = ["Vendor"];
+// module.exports.tags = ["Vendor"];

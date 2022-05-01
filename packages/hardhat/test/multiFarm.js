@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+ const { ethers } = require("hardhat");
 const { use, expect, util } = require("chai");
 const { solidity } = require("ethereum-waffle");
 const { Contract, utils, BigNumber } = require("ethers");
@@ -33,15 +33,17 @@ describe("Yield Farm", () => {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     // Deploy Token contract
-    TokenContract = await ethers.getContractFactory("CrownToken");
+    TokenContract = await ethers.getContractFactory("CrownCapital");
     tokenContract = await TokenContract.deploy();
 
     // Deploy Vault Contract
-    const VaultContract = await ethers.getContractFactory("Vault");
+    const VaultContract = await ethers.getContractFactory("CrownCapitalVault");
     vaultContract = await VaultContract.deploy(tokenContract.address);
-
+    // Start Emissions
+    await vaultContract.startEmissions()
+          
     // Deploy Farm Contract
-    const FarmContract = await ethers.getContractFactory("Farm");
+    const FarmContract = await ethers.getContractFactory("CrownCapitalFarm");
     farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address);
 
     // Deploy Mock Sushi LP Token
@@ -63,6 +65,9 @@ describe("Yield Farm", () => {
     // Set the Farm Address
     await vaultContract.initializeFarm(farmContract.address, 50);
     await vaultContract.initializeFarm(mockLPFarmContract.address, 50);
+    const secondsIn48Hours = 172800;
+    await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+    await ethers.provider.send("evm_mine");
     await vaultContract.setFarms();
 
     // Transfer Ownership
@@ -91,7 +96,6 @@ describe("Yield Farm", () => {
       expect(farm2SecondsPerToken).to.equal(vaultSecondsPerToken.mul(100).div(farm2Percent));
     });
 
-
     it("1 user multifarm", async () => {
       // ACTION: Initialize 
       const stakeAmount = 100;
@@ -118,6 +122,29 @@ describe("Yield Farm", () => {
       tps = await vaultContract.tokensPerSecond();
       expect(farm1Yield).to.equal(tps.mul(secondsStaking).mul(farm1Percent).div(100));
       expect(farm2Yield).to.equal(tps.mul(secondsStaking).mul(farm2Percent).div(100));
+    });
+
+    it("1 farm set to 0 percent", async () => {
+      // ACTION: Initialize 
+      const stakeAmount = 50;
+      const farm1Percent = 0;
+      const farm2Percent = 100;
+      // ACTION: set farms
+      await vaultContract.initializeFarm(farmContract.address, farm1Percent);
+      await vaultContract.initializeFarm(mockLPFarmContract.address, farm2Percent);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
+      await vaultContract.setFarms();
+      // Stake
+      await tokenContract.transfer(addr1.address, stakeAmount);
+      await tokenContract.connect(addr1).approve(farmContract.address, stakeAmount);
+      await mockTokenContract.transfer(addr1.address, stakeAmount);
+      await mockTokenContract.connect(addr1).approve(mockLPFarmContract.address, stakeAmount);
+      // ACTION: Stake to Farm 1 & 2
+      await farmContract.connect(addr1).stake(stakeAmount);
+      // CHECK: Does not revert
+      expect(await farmContract.connect(addr1).unstake(stakeAmount)).to.be.ok;
     });
 
     it("1 user withdraw balances", async () => {

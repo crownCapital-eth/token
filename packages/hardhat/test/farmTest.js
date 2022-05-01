@@ -26,21 +26,24 @@ describe("Yield Farm", () => {
 
   let vaultTokensSupply;
   const tolerance = utils.parseEther("0.0001");
+  const secondsIn48Hours = 172800;
 
   beforeEach(async () => {
     // eslint-disable-next-line no-unused-vars
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     // Deploy Token contract
-    TokenContract = await ethers.getContractFactory("CrownToken");
+    TokenContract = await ethers.getContractFactory("CrownCapital");
     tokenContract = await TokenContract.deploy();
 
     // Deploy Vault Contract
-    const VaultContract = await ethers.getContractFactory("Vault");
+    const VaultContract = await ethers.getContractFactory("CrownCapitalVault");
     vaultContract = await VaultContract.deploy(tokenContract.address);
+    // Start Emissions
+    await vaultContract.startEmissions()
 
     // Deploy Farm Contract
-    const FarmContract = await ethers.getContractFactory("Farm");
+    const FarmContract = await ethers.getContractFactory("CrownCapitalFarm");
     farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address);
 
     // Transfer Tokens
@@ -49,6 +52,8 @@ describe("Yield Farm", () => {
 
     // Set the Farm Address
     await vaultContract.initializeFarm(farmContract.address, 100);
+    await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+    await ethers.provider.send("evm_mine");
     await vaultContract.setFarms();
 
     // Transfer Ownership
@@ -88,6 +93,7 @@ describe("Yield Farm", () => {
         .approve(farmContract.address, stakeAmount);
       await farmContract.connect(addr1).stake(stakeAmount);
       await farmContract.connect(addr1).unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       expect(await farmContract.connect(addr1).withdrawYield())
         .to.be.ok;
     });
@@ -103,7 +109,7 @@ describe("Yield Farm", () => {
     });
 
     it("calculateYieldTime()", async () => {
-      expect(await farmContract.connect(addr1).calculateYieldTime())
+      expect(await farmContract.connect(addr1).calculateYieldTime(addr1.address))
         .to.be.ok;
     });
 
@@ -132,6 +138,47 @@ describe("Yield Farm", () => {
       const balance = await tokenContract.balanceOf(farmContract.address);
       expect(utils.formatEther(balance)).to.equal("0.0");
     });
+  });
+
+  describe("Does not fail after 5-years", () => {
+    it('stake', async () => {
+      // ACTION: Define Amounts and stake
+      stakeAmount = ethers.utils.parseEther("50");
+      await tokenContract.approve(farmContract.address, stakeAmount);
+      await farmContract.stake(stakeAmount);      
+      // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+      const greaterThanSecondsIn5Years = 200000000;
+      // ACTION: Increase time
+      await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+      await ethers.provider.send("evm_mine");
+      // CHECK: stake, withdraw yield, unstake after 5 years
+      expect(await farmContract.unstake(stakeAmount)).to.be.ok;
+      await vaultContract.sendToFarm();
+      expect( await farmContract.withdrawYield()).to.be.ok;
+      await expect( farmContract.stake(stakeAmount)).to.be.revertedWith("Emissions from the vault have concluded.");
+    });
+
+
+      it('Ensure sendToFarm ok after 5 years', async () => {
+        // ACTION: Define Amounts and stake
+        staker1Amount = ethers.utils.parseEther("50");
+        staker2Amount = ethers.utils.parseEther("150");
+        tokenContract.transfer(addr1.address, staker2Amount);
+        await tokenContract.approve(farmContract.address, staker1Amount);
+        await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
+        await farmContract.stake(staker1Amount);
+        await farmContract.connect(addr1).stake(staker2Amount); 
+        // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
+        const greaterThanSecondsIn5Years = 200000000;
+        // ACTION: Increase time
+        await ethers.provider.send("evm_increaseTime", [greaterThanSecondsIn5Years]);
+        await ethers.provider.send("evm_mine");
+        // CHECK: stake, withdraw yield, unstake after 5 years
+        expect(await farmContract.unstake(staker1Amount)).to.be.ok;
+        expect(await farmContract.connect(addr1).unstake(staker2Amount)).to.be.ok;
+        expect(await vaultContract.sendToFarm()).to.be.ok;
+      }); 
+
   });
 
   describe("stake()", () => {
@@ -450,6 +497,7 @@ describe("Yield Farm", () => {
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
       await farmContract.unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       await expect(farmContract.withdrawYield())
         .to.emit(farmContract, "YieldWithdraw")
         .withArgs(owner.address, tokensPerSecond);
@@ -466,6 +514,7 @@ describe("Yield Farm", () => {
       await tokenContract.approve(farmContract.address, stakeAmount);
       await farmContract.stake(stakeAmount);
       await farmContract.unstake(stakeAmount);
+      await vaultContract.sendToFarm();
       await farmContract.withdrawYield();
       // CHECK: Balance
       finalBalance = await tokenContract.balanceOf(owner.address);
@@ -489,6 +538,9 @@ describe("Yield Farm", () => {
       1 second solo and for 1 second 50/50 split. Therefor each 
       user should expect: 
       ~2.1024 Tokens/second * (1 + 0.5)seconds ~= 3.1536 Tokens/staker
+      However, due to gas optimization when you updateYield matters so
+      now staer 1 gets 1 second and staker 2 gets 2 seconds due to
+      the order of unstaking.
       ======================================================*/
       // ACTION: Define Amounts     
       const tokensPerSecond = await vaultContract.tokensPerSecond();
@@ -500,16 +552,17 @@ describe("Yield Farm", () => {
       const staker2Percent = "0.5";
       await tokenContract.transfer(addr1.address, staker2Amount);
       const initialBalance = await tokenContract.balanceOf(owner.address);
-      // NOTE: 1.5 seconds at 0.4756 tokens/second
-      const expectedstaker1Yield = tokensPerSecond.mul(15).div(10);
-      const expectedstaker2Yield = tokensPerSecond.mul(15).div(10);
+      // NOTE: 1 seconds at 0.4756 tokens/second
+      const expectedstaker1Yield = tokensPerSecond;
+      // NOTE: 2 seconds at 0.4756 tokens/second
+      const expectedstaker2Yield = tokensPerSecond.mul(2);
       const expectedTotalYield = expectedstaker1Yield.add(expectedstaker2Yield);
       // ACTION: APPROVE TOKENS
       await tokenContract.approve(farmContract.address, staker1Amount);
       await tokenContract.connect(addr1).approve(farmContract.address, staker2Amount);
       // ACTION: STAKE
       await farmContract.stake(staker1Amount);
-      var staker1StartTime = await farmContract.startTime();
+      var staker1StartTime = await farmContract.getUserStartTime(owner.address);
       await farmContract.connect(addr1).stake(staker2Amount);
       // CHECK: Staked Balance
       let staker1Balance = await farmContract.getUserBalance(owner.address);
@@ -522,7 +575,10 @@ describe("Yield Farm", () => {
       */
       let yield1 = await farmContract.calculateUserTotalYield(owner.address);
       let yield2 = await farmContract.calculateUserTotalYield(addr1.address);
-      expect(yield1).to.equal(tokensPerSecond);
+      var currentTime = await getCurrentTime();
+      var secondsPassed = currentTime - staker1StartTime;
+      const percent = await vaultContract.getActiveFarmPercents(farmContract.address);
+      expect(yield1).to.equal(tokensPerSecond.mul(secondsPassed).div(2));
       expect(yield2).to.equal(utils.parseEther("0"));
       // CHECK: Staked percent
       const totalStake = await farmContract.totalStaked();
@@ -533,13 +589,11 @@ describe("Yield Farm", () => {
       // ACTION: UNSTAKE
       await farmContract.unstake(staker1Amount);
       await farmContract.connect(addr1).unstake(staker2Amount);
-      var staker2UnstakeTime = await getCurrentTime();
-      var totalTimeStaking = staker2UnstakeTime.sub(staker1StartTime);
       // CHECK: Total emissions generated sent to farm
-      // TODO: add a percentage check
-      var farmBalance = await tokenContract.balanceOf(farmContract.address);
       const vaultStartTime = await vaultContract.vaultStartTime();
+      await vaultContract.sendToFarm();
       var currentTime = await getCurrentTime();
+      var farmBalance = await tokenContract.balanceOf(farmContract.address);
       var totalTimePassed = currentTime.sub(vaultStartTime);
       expect(farmBalance).to.be.closeTo(totalTimePassed.mul(tokensPerSecond), tolerance);
       // CHECK: Zero Staked Balance after unstake
@@ -547,11 +601,11 @@ describe("Yield Farm", () => {
       staker2Balance = await farmContract.getUserBalance(addr1.address);
       expect(staker1Balance).to.equal(utils.parseEther("0"));
       expect(staker2Balance).to.equal(utils.parseEther("0"));
-      // // CHECK: Yield 
-      yield1 = await farmContract.calculateUserTotalYield(owner.address);
-      yield2 = await farmContract.calculateUserTotalYield(addr1.address);
-      expect(yield1).to.equal(expectedstaker1Yield);
-      expect(yield2).to.equal(expectedstaker2Yield);
+      // CHECK: Yield       
+      yield1 = await farmContract.getCrownYield(owner.address)
+      yield2 = await farmContract.getCrownYield(addr1.address)
+      expect(yield1).to.closeTo(expectedstaker1Yield, tolerance);
+      expect(yield2).to.closeTo(expectedstaker2Yield, tolerance);
       expect(yield1.add(yield2)).to.be.closeTo(tokensPerSecond.mul(3), tolerance);
       // ACTION: WITHDRAW YIELD
       await farmContract.withdrawYield();
@@ -559,8 +613,8 @@ describe("Yield Farm", () => {
       // CHECK: Staker final balances
       const ownerBalance = await tokenContract.balanceOf(owner.address);
       const addr1Balance = await tokenContract.balanceOf(addr1.address);
-      expect(ownerBalance).to.equal(initialBalance.add(expectedstaker1Yield));
-      expect(addr1Balance).to.equal(staker2Amount.add(expectedstaker2Yield));
+      expect(ownerBalance).to.closeTo(initialBalance.add(expectedstaker1Yield), tolerance);
+      expect(addr1Balance).to.closeTo(staker2Amount.add(expectedstaker2Yield), tolerance);
       // CHECK: Final farm balance      
       const finalfarmBalance = await tokenContract.balanceOf(farmContract.address);
       expect(finalfarmBalance).to.be.closeTo(farmBalance.sub(yield1).sub(yield2), tolerance);
@@ -570,32 +624,6 @@ describe("Yield Farm", () => {
       /*=================================================
       This test will have 4 users stake 50 Tokens each in series (steps 1 through 4).
       Then the users will unstake in series (Steps 5 through 8).
-      1. User 1 stakes, 
-      2. 1 second passes (User 1       @ 100%), User 2 stakes
-      3. 1 second passes (User 1,2     @  50%), User 3 stakes 
-      4. 1 second passes (User 1,2,3   @  33%), User 4 stakes 
-      5. 1 second passes (User 1,2,3,4 @  25%), User 1 unstakes 
-      6. 1 second passes (User 2,3,4   @  33%), User 2 unstakes 
-      7. 1 second passes (User 3,4     @  50%), User 3 unstakes 
-      8. 1 second passes (User 4       @ 100%), User 4 unstakes
-      
-      SECONDS PASSED
-      --------------
-      The total staking time is 7 seconds.
-      Outside wallets (1,4): 
-        1.0 + 0.50 + 0.33 + 0.25 ~= 2.08 seconds
-      Inside wallets (2,3):  
-        0.5 + 0.33 + 0.25 + 0.33 ~= 1.41 seconds
-      
-      TOKENS GENERATED
-      ----------------
-      TokensPerSecond = 2.1024
-      Total Yield:
-        7 seconds * 2.1024 Tokens/second ~= 14.7 Tokens
-      Outside Wallets:
-        2.08 seconds * 2.1024 Tokens/second ~= 4.37 Tokens
-      Inside Wallets:
-        1.41 seconds * 2.1024 Tokens/second ~= 2.96 Tokens
       ======================================================*/
       // Define Amounts
       const tokensPerSecond = await vaultContract.tokensPerSecond();
@@ -633,6 +661,10 @@ describe("Yield Farm", () => {
       await farmContract.connect(addr1).stake(staker2Amount);
       await farmContract.connect(addr2).stake(staker3Amount);
       await farmContract.connect(addr3).stake(staker4Amount);
+      var staker1StartTime = await farmContract.getUserStartTime(owner.address);
+      var staker2StartTime = await farmContract.getUserStartTime(addr1.address);
+      var staker3StartTime = await farmContract.getUserStartTime(addr2.address);
+      var staker4StartTime = await farmContract.getUserStartTime(addr3.address);
       // CHECK: Staked Balance
       let staker1Balance = await farmContract.getUserBalance(owner.address);
       let staker2Balance = await farmContract.getUserBalance(addr1.address);
@@ -655,9 +687,17 @@ describe("Yield Farm", () => {
       expect(utils.formatEther(percent4)).to.equal(staker4Percent);
       // UNSTAKE
       await farmContract.unstake(staker1Amount);
+      var currentTime = await getCurrentTime();
+      var secondsPassed1 = currentTime - staker1StartTime;
       await farmContract.connect(addr1).unstake(staker2Amount);
+      var currentTime = await getCurrentTime();
+      var secondsPassed2 = currentTime - staker2StartTime;
       await farmContract.connect(addr2).unstake(staker3Amount);
+      var currentTime = await getCurrentTime();
+      var secondsPassed3 = currentTime - staker3StartTime;
       await farmContract.connect(addr3).unstake(staker4Amount);
+      var currentTime = await getCurrentTime();
+      var secondsPassed4 = currentTime - staker4StartTime;
       // CHECK UNSTAKE: Zero Staked Balance
       staker1Balance = farmContract.getUserBalance(owner.address);
       staker2Balance = farmContract.getUserBalance(addr1.address);
@@ -681,12 +721,11 @@ describe("Yield Farm", () => {
       yield3 = await farmContract.calculateUserTotalYield(addr2.address);
       yield4 = await farmContract.calculateUserTotalYield(addr3.address);
 
-      expect(yield1).to.be.closeTo(expectedstaker1Yield, tolerance);
-      expect(yield2).to.be.closeTo(expectedstaker2Yield, tolerance);
-      expect(yield3).to.be.closeTo(expectedstaker3Yield, tolerance);
-      expect(yield4).to.be.closeTo(expectedstaker4Yield, tolerance);
-      expect(yield1.add(yield2).add(yield3).add(yield4)).to.be.closeTo(expectedTotalYield, tolerance);
-
+      // The number in div is number of stakers at time of withdraw
+      expect(yield1).to.be.closeTo(tokensPerSecond.mul(secondsPassed1).div(4), tolerance);
+      expect(yield2).to.be.closeTo(tokensPerSecond.mul(secondsPassed2).div(3), tolerance);
+      expect(yield3).to.be.closeTo(tokensPerSecond.mul(secondsPassed3).div(2), tolerance);
+      expect(yield4).to.be.closeTo(tokensPerSecond.mul(secondsPassed4).div(1), tolerance);
     });
   });
 

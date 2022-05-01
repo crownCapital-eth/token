@@ -31,15 +31,17 @@ describe("Vault", () => {
     [owner, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
 
     // Deploy Token contract
-    TokenContract = await ethers.getContractFactory('CrownToken');
+    TokenContract = await ethers.getContractFactory('CrownCapital');
     tokenContract = await TokenContract.deploy();
 
     // Deploy Vault Contract
-    const VaultContract = await ethers.getContractFactory('Vault');
+    const VaultContract = await ethers.getContractFactory('CrownCapitalVault');
     vaultContract = await VaultContract.deploy(tokenContract.address);
+    // Start Emissions
+    await vaultContract.startEmissions()    
 
     // Deploy Farm Contract
-    const FarmContract = await ethers.getContractFactory('Farm');
+    const FarmContract = await ethers.getContractFactory('CrownCapitalFarm');
     farmContract = await FarmContract.deploy(tokenContract.address, vaultContract.address);
 
     // Transfer Tokens
@@ -48,6 +50,9 @@ describe("Vault", () => {
 
     // Set the Farm Address
     await vaultContract.initializeFarm(farmContract.address, 100);
+    const secondsIn48Hours = 172800;
+    await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+    await ethers.provider.send("evm_mine");
     await vaultContract.setFarms();
 
     // Transfer Ownership
@@ -228,6 +233,9 @@ describe("Vault", () => {
     it('setFarms reverted because percent > 100', async () => {
       await vaultContract.initializeFarm(farmContract.address, 55);
       await vaultContract.initializeFarm(addr1.address, 55);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await expect(
         vaultContract.setFarms())
         .to.be.revertedWith("Total Percent must be 100");
@@ -235,6 +243,9 @@ describe("Vault", () => {
 
     it('setFarms reverted because percent < 100', async () => {
       await vaultContract.initializeFarm(farmContract.address, 55);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await expect(
         vaultContract.setFarms())
         .to.be.revertedWith("Total Percent must be 100");
@@ -243,6 +254,9 @@ describe("Vault", () => {
     it('setFarms: 1 Farm', async () => {
       // ACTION: Initialize 1 farm 100% and set the farm
       await vaultContract.initializeFarm(addr1.address, 100);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // CHECK: initialization arrays deleted
       farmTokens = await vaultContract.getFarmTokens();
@@ -260,6 +274,9 @@ describe("Vault", () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, 45);
       await vaultContract.initializeFarm(addr2.address, 55);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // CHECK: initialization arrays deleted
       farmTokens = await vaultContract.getFarmTokens();
@@ -337,6 +354,9 @@ describe("Vault", () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, 45);
       await vaultContract.initializeFarm(addr2.address, 55);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
       const greaterThanSecondsIn5Years = 200000000;
@@ -355,6 +375,9 @@ describe("Vault", () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, 45);
       await vaultContract.initializeFarm(addr2.address, 55);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // ACTION: Increase Time
       const increaseTime = 3;
@@ -442,6 +465,9 @@ describe("Vault", () => {
       const farm2Percent=55;
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
       await vaultContract.initializeFarm(addr2.address, farm2Percent);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // NOTE: Seconds in 5 year: 5*365*24*3600 = 157,680,000
       const greaterThanSecondsIn5Years = 200000000;
@@ -468,6 +494,9 @@ describe("Vault", () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
       await vaultContract.initializeFarm(addr2.address, farm2Percent);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // ACTION: Increase Time
       const increaseTime = 3;
@@ -521,6 +550,9 @@ describe("Vault", () => {
       // ACTION: Initialize and set 2 farms
       await vaultContract.initializeFarm(addr1.address, farm1Percent);
       await vaultContract.initializeFarm(addr2.address, farm2Percent);
+      const secondsIn48Hours = 172800;
+      await ethers.provider.send("evm_increaseTime", [secondsIn48Hours]);
+      await ethers.provider.send("evm_mine");
       await vaultContract.setFarms();
       // ACTION: Increase Time
       const increaseTime = 3;
