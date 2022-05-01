@@ -19,7 +19,7 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   if (chainId !== "31337") {
     try {
       console.log(" 🎫 Verifing Contract on Etherscan... ");
-      await sleep( 60000 ) // wait seconds for deployment to propagate
+      await sleep( 120000 ) // wait seconds for deployment to propagate
       await run("verify:verify", {
         address: crownCapital.address,
         contract: "contracts/CrownCapital.sol:CrownCapital",

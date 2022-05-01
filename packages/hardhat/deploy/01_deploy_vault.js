@@ -18,7 +18,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
   });
 
   const vault = await ethers.getContract("CrownCapitalVault", deployer);
-  const DAO_multisig="0x60f7cBAbF6f7A5525E47EE814DEfA72a18Fa45CC"; 
+  // const DAO_multisig="0x6A870BC87C992EDb0d84cf19aF4b061e756F9e78"; //CrownCapital
+  const DAO_multisig="0x79864b719729599a4695f62ad22AD488AB290e58"; 
 
   // Transfer the tokens to the vault
   console.log("\n 🏵  Send 75% of tokens (75,000,000) to the vault...\n");
@@ -28,7 +29,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     ethers.utils.parseEther("75000000")
   );
   console.log("\n    ✅ confirming transfer...\n");
-  await sleep(15000); // wait seconds for transaction to propagate
+  await sleep(120000); // wait seconds for transaction to propagate
+
 
   // Transfer the tokens to the vault
   console.log("\n 🏵  Send 25% of tokens (25,000,000) to DAO Multisig...\n");
@@ -38,8 +40,9 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     ethers.utils.parseEther("25000000")
   );
   console.log("\n    ✅ confirming transfer...\n");
-  await sleep(15000); // wait 15 seconds for transaction to propagate
+  await sleep(120000); // wait 15 seconds for transaction to propagate
 
+  
   // Change address to DAO Multisig
   console.log("\n 🤹  Sending Vault ownership to DAO Multisig...\n")
   const ownershipTransaction = await vault.transferOwnership(DAO_multisig);
@@ -50,7 +53,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     if (chainId !== "31337") {
       try {
         console.log(" 🎫 Verifing Contract on Etherscan... ");
-        await sleep( 60000 ) // wait seconds for deployment to propagate
+        await sleep( 120000 ) // wait seconds for deployment to propagate
         await run("verify:verify", {
           address: vault.address,
           contract: "contracts/CrownCapitalVault.sol:CrownCapitalVault",
