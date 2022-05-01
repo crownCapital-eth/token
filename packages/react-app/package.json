@@ -2,6 +2,7 @@
   "name": "@crown-capital-staking/react-app",
   "version": "1.0.0",
   "homepage": ".",
+  "license": "MIT",
   "browserslist": {
     "production": [
       ">0.2%",
@@ -15,26 +16,23 @@
     ]
   },
   "dependencies": {
-    "@ant-design/icons": "^4.2.2",
-    "@portis/web3": "^4.0.6",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.8",
     "@walletconnect/web3-provider": "^1.7.1",
-    "antd": "4.18.4",
-    "authereum": "^0.1.14",
     "axios": "^0.25.0",
     "bnc-notify": "^1.5.0",
+    "bootstrap": "5.1.3",
     "dotenv": "^8.2.0",
     "eth-hooks": "2.3.14",
     "ethers": "^5.5.3",
-    "fortmatic": "^2.2.1",
     "node-watch": "^0.7.1",
     "react": "^17.0.2",
     "react-blockies": "^1.4.1",
+    "react-bootstrap": "^2.1.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "4.0.0",
+    "react-scripts": "4.0.3",
     "walletlink": "^2.4.4",
     "web3modal": "^1.9.5"
   },

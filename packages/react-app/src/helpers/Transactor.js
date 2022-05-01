@@ -1,12 +1,9 @@
-import { notification } from "antd";
 import Notify from "bnc-notify";
 import { BLOCKNATIVE_DAPPID } from "../constants";
+import { Toast } from "react-bootstrap";
 
 const { ethers } = require("ethers");
-
 const callbacks = {};
-
-const DEBUG = true;
 
 export default function Transactor(providerOrSigner, gasPrice, etherscan) {
   if (typeof providerOrSigner !== "undefined") {
@@ -25,18 +22,15 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
         network = await providerOrSigner.getNetwork();
       }
 
-      console.log("network", network);
-
       let options = null;
       let notify = null;
       if (navigator.onLine) {
         options = {
-          dappId: BLOCKNATIVE_DAPPID, // GET YOUR OWN KEY AT https://account.blocknative.com
+          dappId: BLOCKNATIVE_DAPPID,
           system: "ethereum",
           networkId: network.chainId,
-          // darkMode: Boolean, // (default: false)
+          darkMode: true,
           transactionHandler: txInformation => {
-            if (DEBUG) console.log("HANDLE TX", txInformation);
             const possibleFunction = callbacks[txInformation.transaction.hash];
             if (typeof possibleFunction === "function") {
               possibleFunction(txInformation.transaction);
@@ -60,7 +54,6 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
       try {
         let result;
         if (tx instanceof Promise) {
-          if (DEBUG) console.log("AWAITING TX", tx);
           result = await tx;
         } else {
           if (!tx.gasPrice) {
@@ -69,10 +62,8 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           if (!tx.gasLimit) {
             tx.gasLimit = ethers.utils.hexlify(120000);
           }
-          if (DEBUG) console.log("RUNNING TX", tx);
           result = await signer.sendTransaction(tx);
         }
-        if (DEBUG) console.log("RESULT:", result);
 
         if (callback) {
           callbacks[result.hash] = callback;
@@ -87,17 +78,11 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
             };
           });
         } else {
-          notification.info({
-            message: "Local Transaction Sent",
-            description: result.hash,
-            placement: "bottomRight",
-          });
           // on most networks BlockNative will update a transaction handler,
           // but locally we will set an interval to listen...
           if (callback) {
             const txResult = await tx;
             const listeningInterval = setInterval(async () => {
-              console.log("CHECK IN ON THE TX", txResult, provider);
               const currentTransactionReceipt = await provider.getTransactionReceipt(txResult.hash);
               if (currentTransactionReceipt && currentTransactionReceipt.confirmations) {
                 callback({ ...txResult, ...currentTransactionReceipt });
@@ -105,6 +90,15 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
               }
             }, 500);
           }
+
+          return (
+            <Toast>
+              <Toast.Header>
+                <strong className="me-auto">Local Transaction Sent</strong>
+              </Toast.Header>
+              <Toast.Body>{result.hash}</Toast.Body>
+            </Toast>
+          );
         }
 
         if (typeof result.wait === "function") {
@@ -113,7 +107,6 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
 
         return result;
       } catch (e) {
-        if (DEBUG) console.log(e);
         // Accounts for Metamask and default signer on all networks
         let message =
           e.data && e.data.message
@@ -127,7 +120,6 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           message = e.message;
         }
 
-        console.log("Attempt to clean up:", message);
         try {
           let obj = JSON.parse(message);
           if (obj && obj.body) {
@@ -140,13 +132,18 @@ export default function Transactor(providerOrSigner, gasPrice, etherscan) {
           //ignore
         }
 
-        notification.error({
-          message: "Transaction Error",
-          description: message,
-        });
         if (callback && typeof callback === "function") {
           callback(e);
         }
+
+        return (
+          <Toast>
+            <Toast.Header>
+              <strong className="me-auto">Transaction error</strong>
+            </Toast.Header>
+            <Toast.Body>{message}</Toast.Body>
+          </Toast>
+        );
       }
     };
   }

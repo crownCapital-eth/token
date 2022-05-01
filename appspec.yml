@@ -1,0 +1,10 @@
+version: 0.0
+os: linux
+files:
+  - source: /packages/react-app
+    destination: /home/ec2-user/crown-capital/
+hooks:
+  ApplicationStart:
+    - location: packages/react-app/scripts/deploy.sh
+      timeout: 300
+      runas: root

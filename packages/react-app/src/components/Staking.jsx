@@ -1,11 +1,15 @@
-import { Button, Card, Input, Space } from "antd";
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
 import { useContractReader } from "eth-hooks";
+import { ALLOWANCE_FUNCTION, CROWN_TOKEN_CONTRACT } from "../constants";
+import { Button, Card, Tab, Tabs } from "react-bootstrap";
 
 export default function Staking({ address, readContracts, writeContracts, tx }) {
   const farmAddress = readContracts && readContracts.Farm && readContracts.Farm.address;
-  const farmApproval = useContractReader(readContracts, "CrownToken", "allowance", [address, farmAddress]);
+  const farmApproval = useContractReader(readContracts, CROWN_TOKEN_CONTRACT, ALLOWANCE_FUNCTION, [
+    address,
+    farmAddress,
+  ]);
 
   const [buying, setBuying] = useState();
 
@@ -33,57 +37,54 @@ export default function Staking({ address, readContracts, writeContracts, tx }) 
     stake: (
       <div>
         <div style={{ padding: 8 }}>
-          <Input
+          <label style={{ paddingRight: "5px" }}>Stake Amount: </label>
+          <input
             style={{ textAlign: "center" }}
-            placeholder={"Number of tokens to stake"}
             value={amountToStake}
             onChange={e => {
               setAmountToStake(e.target.value);
             }}
           />
         </div>
-        <div style={{ padding: 8 }}>
-          <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
-            <Button
-              type={"primary"}
-              loading={buying}
-              shape="round"
-              onClick={async () => {
-                setBuying(true);
-                await tx(
-                  writeContracts.CrownToken.approve(
-                    readContracts.Farm.address,
-                    amountToStake && ethers.utils.parseEther(amountToStake),
-                  ),
-                );
-                setBuying(false);
-              }}
-            >
-              Approve Tokens
-            </Button>
+        <div style={{ padding: 8 }} className={"d-flex justify-content-evenly"}>
+          <Button
+            type={"primary"}
+            loading={buying}
+            shape="round"
+            onClick={async () => {
+              setBuying(true);
+              await tx(
+                writeContracts.CrownToken.approve(
+                  readContracts.Farm.address,
+                  amountToStake && ethers.utils.parseEther(amountToStake),
+                ),
+              );
+              setBuying(false);
+            }}
+          >
+            Approve Tokens
+          </Button>
 
-            <Button
-              type={"primary"}
-              loading={buying}
-              shape="round"
-              onClick={async () => {
-                setBuying(true);
-                await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
-                setBuying(false);
-              }}
-            >
-              Stake Tokens
-            </Button>
-          </Space>
+          <Button
+            type={"primary"}
+            loading={buying}
+            onClick={async () => {
+              setBuying(true);
+              await tx(writeContracts.Farm.stake(amountToStake && ethers.utils.parseEther(amountToStake)));
+              setBuying(false);
+            }}
+          >
+            Stake Tokens
+          </Button>
         </div>
       </div>
     ),
     unstake: (
       <div>
         <div style={{ padding: 8 }}>
-          <Input
+          <label>Amount to Unstake: </label>
+          <input
             style={{ textAlign: "center" }}
-            placeholder={"amount of tokens to unstake"}
             value={amountToUnstake}
             onChange={e => {
               setAmountToUnstake(e.target.value);
@@ -91,39 +92,32 @@ export default function Staking({ address, readContracts, writeContracts, tx }) 
           />
         </div>
         <div style={{ padding: 8 }}>
-          <Space align="center" style={{ width: "100%", justifyContent: "center" }}>
-            <Button
-              type={"primary"}
-              loading={buying}
-              onClick={async () => {
-                setBuying(true);
-                await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
-                setBuying(false);
-              }}
-            >
-              Stop Staking
-            </Button>
-          </Space>
+          <Button
+            type={"primary"}
+            loading={buying}
+            onClick={async () => {
+              setBuying(true);
+              await tx(writeContracts.Farm.unstake(amountToUnstake && ethers.utils.parseEther(amountToUnstake)));
+              setBuying(false);
+            }}
+          >
+            Unstake
+          </Button>
         </div>
       </div>
     ),
   };
 
-  const [stakeTabKey, setStakeTabKey] = useState("stake");
-  const onStakeTabChange = key => {
-    setStakeTabKey(key);
-  };
-
   return (
-    <Card
-      title="Staking"
-      tabList={tabList}
-      activeTabKey={stakeTabKey}
-      onTabChange={key => {
-        onStakeTabChange(key);
-      }}
-    >
-      {contentList[stakeTabKey]}
+    <Card as="h5" className="text-center">
+      <Tabs defaultActiveKey="stake" className="mb-3 justify-content-center">
+        <Tab eventKey="stake" title="Stake">
+          <Tab.Content>{contentList.stake}</Tab.Content>
+        </Tab>
+        <Tab eventKey="unstake" title="Unstake">
+          <Tab.Content style={{ borderTop: "5px" }}>{contentList.unstake}</Tab.Content>
+        </Tab>
+      </Tabs>
     </Card>
   );
 }

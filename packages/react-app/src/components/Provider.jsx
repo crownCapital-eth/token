@@ -1,10 +1,10 @@
-import { Badge, Button } from "antd";
 import { useBlockNumber, usePoller } from "eth-hooks";
 import React, { useState } from "react";
+import { Badge, Button } from "react-bootstrap";
 
 export default function Provider(props) {
   const [showMore, setShowMore] = useState(false);
-  const [status, setStatus] = useState("processing");
+  const [status, setStatus] = useState("secondary");
   const [network, setNetwork] = useState();
   const [signer, setSigner] = useState();
   const [address, setAddress] = useState();
@@ -23,7 +23,7 @@ export default function Provider(props) {
         }
       } catch (e) {
         console.log(e);
-        setStatus("processing");
+        setStatus("secondary");
       }
       try {
         const newSigner = await props.provider.getSigner();
@@ -43,13 +43,12 @@ export default function Provider(props) {
   ) {
     return (
       <Button
-        shape="round"
-        size="large"
+        size="lg"
         onClick={() => {
           setShowMore(!showMore);
         }}
       >
-        <Badge status={status} /> {props.name}
+        <Badge bg={status} /> {props.name}
       </Button>
     );
   }
@@ -87,13 +86,12 @@ export default function Provider(props) {
 
   return (
     <Button
-      shape="round"
-      size="large"
+      size="lg"
       onClick={() => {
         setShowMore(!showMore);
       }}
     >
-      <Badge status={status} /> {props.name} {showWallet} #{blockNumber} {showExtra}
+      <Badge bg={status} /> {props.name} {showWallet} #{blockNumber} {showExtra}
     </Button>
   );
 }

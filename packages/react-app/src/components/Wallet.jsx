@@ -1,11 +1,8 @@
 import { Account } from "./index";
 import React, { useCallback, useEffect } from "react";
 import { ethers } from "ethers";
-import WalletSetup from "../helpers/WalletSetup";
 
-export default function Wallet({ injectedProvider, setInjectedProvider }) {
-  const web3Modal = WalletSetup();
-
+export default function Wallet({ web3Modal, injectedProvider, setInjectedProvider }) {
   const logoutOfWeb3Modal = async () => {
     await web3Modal.clearCachedProvider();
     if (injectedProvider && injectedProvider.provider && typeof injectedProvider.provider.disconnect == "function") {
@@ -39,9 +36,5 @@ export default function Wallet({ injectedProvider, setInjectedProvider }) {
     }
   }, [loadWeb3Modal]);
 
-  return (
-    <div style={{ position: "fixed", textAlign: "right", right: 0, top: 0, padding: 5 }}>
-      <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />
-    </div>
-  );
+  return <Account web3Modal={web3Modal} loadWeb3Modal={loadWeb3Modal} logoutOfWeb3Modal={logoutOfWeb3Modal} />;
 }
